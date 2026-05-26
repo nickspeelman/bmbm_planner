@@ -158,8 +158,8 @@ const regionGroups = [
   { id: 'other', label: 'Other', regionIds: ['industrial'] }
 ];
 const interestLevels = [
-  { id: 'love', label: 'Love it', short: 'Love it', markerState: 'love' },
-  { id: 'maybe', label: 'Interested', short: 'Interested', markerState: 'maybe' },
+  { id: 'love', label: 'Love', short: 'Love', markerState: 'love' },
+  { id: 'maybe', label: 'Like', short: 'Like', markerState: 'maybe' },
   { id: 'curious', label: 'Curious', short: 'Curious', markerState: 'curious' }
 ];
 
@@ -883,8 +883,8 @@ function renderSummary(mode) {
 
 function interestButtonSubtext(id) {
   if (id === 'love') return 'Top choice';
-  if (id === 'maybe') return 'Worth discussing';
-  if (id === 'curious') return 'Open to it';
+  if (id === 'maybe') return 'Likely choice';
+  if (id === 'curious') return 'Worth discussing';
   return '';
 }
 
