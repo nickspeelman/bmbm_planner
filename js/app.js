@@ -157,6 +157,7 @@ const regionGroups = [
   { id: 'inner', label: 'Inner', regionIds: ['rook', 'daith', 'conch', 'tragus', 'antiTragus'] },
   { id: 'other', label: 'Other', regionIds: ['industrial'] }
 ];
+
 const interestLevels = [
   { id: 'love', label: 'Love', short: 'Love', markerState: 'love' },
   { id: 'maybe', label: 'Like', short: 'Like', markerState: 'maybe' },
@@ -173,6 +174,28 @@ const emptyFutureCounts = () => Object.fromEntries(
 
 const state = {
   step: 1,
+  contact: {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    preferredContact: '',
+    appointmentStatus: '',
+    appointmentDateTime: ''
+  },
+  startingPoint: {
+    hopes: [],
+    otherHopeDetails: '',
+    eventDate: '',
+    ideaClarity: '',
+    initialIdeas: ''
+  },
+  lifestyle: {
+    sleepSide: '',
+    routine: [],
+    healingHistory: '',
+    timing: []
+  },
   earChoice: null,
   bothSimilar: null,
   lobeEditSide: 'left',
@@ -191,11 +214,116 @@ const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 const svgNS = 'http://www.w3.org/2000/svg';
 
 function init() {
+  setupContactStep();
+  setupStartingPoint();
   setupStepOne();
   setupStepTwo();
   setupNavigation();
   setupMapControls();
+  setupLifestyleStep();
   renderAll();
+}
+
+
+function setupContactStep() {
+  $$('[data-contact-field]').forEach((field) => {
+    field.addEventListener('input', () => {
+      state.contact[field.dataset.contactField] = field.value;
+      renderContactStep();
+    });
+  });
+
+  $$('[data-contact-choice]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.contact[button.dataset.contactChoice] = button.dataset.value;
+      renderContactStep();
+    });
+  });
+
+  const continueButton = $('#contact-continue-btn');
+  if (continueButton) {
+    continueButton.addEventListener('click', () => {
+      if (!validateContactStep(true)) return;
+      state.step = 2;
+      renderAll();
+    });
+  }
+}
+
+function setupStartingPoint() {
+  $$('[data-hope]').forEach((button) => {
+    button.addEventListener('click', () => {
+      toggleArrayValue(state.startingPoint.hopes, button.dataset.hope);
+      renderStartingPoint();
+    });
+  });
+
+  $$('[data-idea-clarity]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.startingPoint.ideaClarity = button.dataset.ideaClarity;
+      renderStartingPoint();
+    });
+  });
+
+  $$('[data-starting-field]').forEach((field) => {
+    field.addEventListener('input', () => {
+      state.startingPoint[field.dataset.startingField] = field.value;
+    });
+  });
+}
+
+function setupLifestyleStep() {
+  $$('[data-lifestyle-choice]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.lifestyle[button.dataset.lifestyleChoice] = button.dataset.value;
+      renderLifestyleStep();
+    });
+  });
+
+  $$('[data-routine]').forEach((button) => {
+    button.addEventListener('click', () => {
+      toggleExclusiveArrayValue(state.lifestyle.routine, button.dataset.routine, 'none');
+      renderLifestyleStep();
+    });
+  });
+
+  $$('[data-timing]').forEach((button) => {
+    button.addEventListener('click', () => {
+      toggleExclusiveArrayValue(state.lifestyle.timing, button.dataset.timing, 'nothing-special');
+      renderLifestyleStep();
+    });
+  });
+}
+
+function toggleArrayValue(list, value) {
+  const index = list.indexOf(value);
+  if (index >= 0) list.splice(index, 1);
+  else list.push(value);
+}
+
+function toggleExclusiveArrayValue(list, value, exclusiveValue) {
+  if (value === exclusiveValue) {
+    list.splice(0, list.length, exclusiveValue);
+    return;
+  }
+
+  const exclusiveIndex = list.indexOf(exclusiveValue);
+  if (exclusiveIndex >= 0) list.splice(exclusiveIndex, 1);
+  toggleArrayValue(list, value);
+}
+
+function validateContactStep(showErrors = false) {
+  const firstNameOk = state.contact.firstName.trim().length > 0;
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.contact.email.trim());
+
+  if (showErrors) {
+    const firstError = $('#first-name-error');
+    const emailError = $('#email-error');
+    if (firstError) firstError.classList.toggle('is-hidden', firstNameOk);
+    if (emailError) emailError.classList.toggle('is-hidden', emailOk);
+  }
+
+  return firstNameOk && emailOk;
 }
 
 function setupStepOne() {
@@ -204,7 +332,7 @@ function setupStepOne() {
       state.earChoice = button.dataset.earChoice;
       if (state.earChoice === 'left') state.mapSide = 'left';
       if (state.earChoice === 'right') state.mapSide = 'right';
-      state.step = 2;
+      state.step = 4;
       renderAll();
     });
   });
@@ -242,15 +370,15 @@ function setupStepTwo() {
         } else if (!state.lobe.right) {
           state.lobeEditSide = 'right';
         } else {
-          state.step = 3;
+          state.step = 5;
         }
       } else if (state.earChoice === 'both') {
         state.lobe.left = choice;
         state.lobe.right = choice;
-        state.step = 3;
+        state.step = 5;
       } else {
         state.lobe[state.earChoice] = choice;
-        state.step = 3;
+        state.step = 5;
       }
 
       renderAll();
@@ -303,9 +431,13 @@ function setupMapControls() {
 function renderAll() {
   renderSteps();
   renderProgress();
+  renderContactStep();
+  renderStartingPoint();
   renderStepOne();
   renderStepTwo();
   renderMapSteps();
+  renderLifestyleStep();
+  renderReview();
 }
 
 function renderSteps() {
@@ -317,6 +449,70 @@ function renderSteps() {
 function renderProgress() {
   $$('.progress-dot').forEach((dot) => {
     dot.classList.toggle('is-active', Number(dot.dataset.progress) === state.step);
+  });
+}
+
+
+function renderContactStep() {
+  $$('[data-contact-field]').forEach((field) => {
+    const key = field.dataset.contactField;
+    if (document.activeElement !== field && field.value !== state.contact[key]) {
+      field.value = state.contact[key] || '';
+    }
+  });
+
+  $$('[data-contact-choice]').forEach((button) => {
+    const key = button.dataset.contactChoice;
+    button.classList.toggle('is-selected', state.contact[key] === button.dataset.value);
+  });
+
+  const appointmentWrap = $('#appointment-date-wrap');
+  if (appointmentWrap) {
+    appointmentWrap.classList.toggle('is-hidden', state.contact.appointmentStatus !== 'already-booked');
+  }
+
+  if (state.contact.firstName.trim()) $('#first-name-error')?.classList.add('is-hidden');
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.contact.email.trim())) $('#email-error')?.classList.add('is-hidden');
+}
+
+function renderStartingPoint() {
+  $$('[data-hope]').forEach((button) => {
+    button.classList.toggle('is-selected', state.startingPoint.hopes.includes(button.dataset.hope));
+  });
+
+  $$('[data-idea-clarity]').forEach((button) => {
+    button.classList.toggle('is-selected', state.startingPoint.ideaClarity === button.dataset.ideaClarity);
+  });
+
+  $$('[data-starting-field]').forEach((field) => {
+    const key = field.dataset.startingField;
+    if (document.activeElement !== field && field.value !== state.startingPoint[key]) {
+      field.value = state.startingPoint[key] || '';
+    }
+  });
+
+  const eventWrap = $('#event-date-wrap');
+  if (eventWrap) {
+    const showEventDate = state.startingPoint.hopes.includes('event') || state.startingPoint.hopes.includes('bridal');
+    eventWrap.classList.toggle('is-hidden', !showEventDate);
+  }
+
+  const otherWrap = $('#other-hope-wrap');
+  if (otherWrap) otherWrap.classList.toggle('is-hidden', !state.startingPoint.hopes.includes('other'));
+}
+
+function renderLifestyleStep() {
+  $$('[data-lifestyle-choice]').forEach((button) => {
+    const key = button.dataset.lifestyleChoice;
+    button.classList.toggle('is-selected', state.lifestyle[key] === button.dataset.value);
+  });
+
+  $$('[data-routine]').forEach((button) => {
+    button.classList.toggle('is-selected', state.lifestyle.routine.includes(button.dataset.routine));
+  });
+
+  $$('[data-timing]').forEach((button) => {
+    button.classList.toggle('is-selected', state.lifestyle.timing.includes(button.dataset.timing));
   });
 }
 
@@ -771,7 +967,7 @@ function renderTally(container, mode) {
   const entries = mode === 'existing' ? existingTallyEntries(side) : futureTallyEntries(side);
 
   const heading = document.createElement('h3');
-  heading.textContent = mode === 'existing' ? 'Have' : 'Want / Interested In';
+  heading.textContent = mode === 'existing' ? 'Have' : 'Future interests';
   container.appendChild(heading);
 
   if (!entries.length) {
@@ -779,7 +975,7 @@ function renderTally(container, mode) {
     empty.className = 'empty-tally';
     empty.textContent = mode === 'existing'
       ? 'Tap the diagram to add piercings you already have.'
-      : 'Tap the diagram to choose a placement, then pick Love it, Interested, or Curious.';
+      : 'Tap the diagram to choose a placement, then pick Love, Like, or Curious.';
     container.appendChild(empty);
     return;
   }
@@ -889,19 +1085,49 @@ function interestButtonSubtext(id) {
 }
 
 function interestButtonIcon(id) {
-  if (id === 'love') return '★';
-  if (id === 'maybe') return '◆';
+  if (id === 'love') return '♥';
+  if (id === 'maybe') return '★';
   if (id === 'curious') return '?';
   return '•';
+}
+
+function helperAnchorY(region, mode) {
+  const lastPoint = state.lastTouched?.mode === mode && state.lastTouched?.id === region.id
+    ? state.lastTouched.point
+    : null;
+
+  if (lastPoint?.start && lastPoint?.end) {
+    return (lastPoint.start.y + lastPoint.end.y) / 2;
+  }
+
+  if (typeof lastPoint?.y === 'number') {
+    return lastPoint.y;
+  }
+
+  return region.y;
+}
+
+function shouldShowHelperAtTop(region, mode) {
+  return helperAnchorY(region, mode) >= 285;
+}
+
+function positionFloatingHelper(panel, region, mode) {
+  const showAtTop = shouldShowHelperAtTop(region, mode);
+  panel.classList.toggle('helper-at-top', showAtTop);
+  panel.classList.toggle('helper-at-bottom', !showAtTop);
 }
 
 function renderDetailPanel(panel, mode) {
   const selectedId = state.selectedRegion[mode];
   panel.classList.toggle('is-hidden', !selectedId);
 
-  if (!selectedId) return;
+  if (!selectedId) {
+    panel.classList.remove('helper-at-top', 'helper-at-bottom');
+    return;
+  }
 
   const region = regionById(selectedId);
+  positionFloatingHelper(panel, region, mode);
   const actionText = mode === 'existing'
     ? (region.type === 'industrial'
       ? 'Tap the highlighted area once to place the industrial bar.'
@@ -962,6 +1188,165 @@ function renderDetailPanel(panel, mode) {
   panel.querySelectorAll('[data-add-interest]').forEach((button) => {
     button.addEventListener('click', () => addFutureInterest(button.dataset.regionId, button.dataset.addInterest));
   });
+}
+
+
+function renderReview() {
+  const container = $('#review-summary');
+  if (!container) return;
+
+  container.innerHTML = `
+    ${reviewSection('Contact', reviewList([
+      ['Name', fullName() || 'Not provided'],
+      ['Email', state.contact.email || 'Not provided'],
+      state.contact.phone ? ['Phone', state.contact.phone] : null,
+      ['Preferred contact', labelFor('preferredContact', state.contact.preferredContact)],
+      ['Appointment status', labelFor('appointmentStatus', state.contact.appointmentStatus)],
+      state.contact.appointmentDateTime ? ['Appointment date/time', state.contact.appointmentDateTime] : null
+    ]))}
+    ${reviewSection('Reason / Starting Point', reviewList([
+      ['Hoping for', listLabels(state.startingPoint.hopes, hopeLabels)],
+      state.startingPoint.eventDate ? ['Event date', state.startingPoint.eventDate] : null,
+      state.startingPoint.otherHopeDetails ? ['Other details', state.startingPoint.otherHopeDetails] : null,
+      ['Idea clarity', labelFor('ideaClarity', state.startingPoint.ideaClarity)],
+      state.startingPoint.initialIdeas ? ['Already in mind', state.startingPoint.initialIdeas] : null
+    ]))}
+    ${reviewSection('Planning', reviewList([
+      ['Planning', labelFor('earChoice', state.earChoice)],
+      ...plannedSides().map((side) => [`${capitalize(side)} lobe`, labelFor('lobe', state.lobe[side])])
+    ]))}
+    ${reviewEarSection('Existing piercings', 'existing')}
+    ${reviewEarSection('Future interests', 'future')}
+    ${reviewSection('Lifestyle', reviewList([
+      ['Sleep side', labelFor('sleepSide', state.lifestyle.sleepSide)],
+      ['Daily routine', listLabels(state.lifestyle.routine, routineLabels)],
+      ['Healing history', labelFor('healingHistory', state.lifestyle.healingHistory)],
+      ['Timing', listLabels(state.lifestyle.timing, timingLabels)]
+    ]))}
+  `;
+}
+
+const hopeLabels = {
+  event: 'Something special for an event',
+  bridal: 'Wedding / bridal look',
+  milestone: 'Birthday or milestone',
+  'new-piercing': 'New piercing',
+  refresh: 'Jewelry refresh',
+  'curated-project': 'Curated ear project',
+  'help-deciding': 'Help deciding what fits',
+  exploring: 'Just exploring',
+  other: 'Other'
+};
+
+const routineLabels = {
+  earbuds: 'Earbuds',
+  'over-ear-headphones': 'Over-ear headphones',
+  glasses: 'Glasses',
+  helmets: 'Helmets',
+  'hair-covers-ears': 'Hair often covers ears',
+  'swimming-soon': 'Swimming soon',
+  'sports-gym': 'Sports / gym',
+  none: 'None of these'
+};
+
+const timingLabels = {
+  vacation: 'Vacation',
+  swimming: 'Swimming',
+  'wedding-photos': 'Wedding / photos',
+  'sports-season': 'Sports season',
+  'big-event': 'Big event',
+  'nothing-special': 'Nothing special'
+};
+
+const singleLabels = {
+  preferredContact: { email: 'Email', text: 'Text', either: 'Either' },
+  appointmentStatus: { 'already-booked': 'I already have an appointment', thinking: 'I’m thinking about booking', exploring: 'I’m just exploring' },
+  ideaClarity: { exact: 'I know exactly what I want', 'few-ideas': 'I have a few ideas', vibe: 'I have a vibe, but not a specific piercing', open: 'I’m totally open' },
+  earChoice: { left: 'Left ear', right: 'Right ear', both: 'Both ears' },
+  lobe: { detached: 'Detached', attached: 'Attached / Connected', unsure: 'Not sure' },
+  sleepSide: { left: 'Left', right: 'Right', both: 'Both', back: 'Back sleeper', changes: 'It changes' },
+  healingHistory: { easy: 'Easy', mixed: 'Mixed', sensitive: 'Sensitive / tricky', 'first-piercing': 'First piercing', 'not-sure': 'Not sure' }
+};
+
+function fullName() {
+  return [state.contact.firstName, state.contact.lastName].map((part) => part.trim()).filter(Boolean).join(' ');
+}
+
+function labelFor(group, value) {
+  if (!value) return 'Not selected yet';
+  return singleLabels[group]?.[value] || value;
+}
+
+function listLabels(values, dictionary) {
+  if (!values || !values.length) return 'None selected yet';
+  return values.map((value) => dictionary[value] || value).join(', ');
+}
+
+function plannedSides() {
+  if (state.earChoice === 'left') return ['left'];
+  if (state.earChoice === 'right') return ['right'];
+  if (state.earChoice === 'both') return ['left', 'right'];
+  return ['left'];
+}
+
+function reviewSection(title, body) {
+  return `<section class="review-section"><h2>${escapeHTML(title)}</h2>${body}</section>`;
+}
+
+function reviewList(rows) {
+  const items = rows.filter(Boolean).map(([label, value]) => `
+    <div class="review-row">
+      <dt>${escapeHTML(label)}</dt>
+      <dd>${escapeHTML(value || 'Not provided')}</dd>
+    </div>
+  `).join('');
+  return `<dl class="review-list">${items}</dl>`;
+}
+
+function reviewEarSection(title, mode) {
+  const sideBlocks = plannedSides().map((side) => {
+    const content = mode === 'existing' ? reviewExistingForSide(side) : reviewFutureForSide(side);
+    return `<div class="review-ear-block"><h3>${capitalize(side)} ear</h3>${content}</div>`;
+  }).join('');
+
+  return reviewSection(title, sideBlocks);
+}
+
+function reviewExistingForSide(side) {
+  const entries = existingTallyEntries(side);
+  if (!entries.length) return '<p class="review-empty">None added yet.</p>';
+  return `<ul class="review-bullet-list">${entries.map((entry) => `<li>${escapeHTML(entry.label)}</li>`).join('')}</ul>`;
+}
+
+function reviewFutureForSide(side) {
+  const groups = interestLevels.map((level) => {
+    const entries = regions.map((region) => {
+      const count = countPlacements(state.future[side][region.id][level.id]);
+      return count > 0 ? `${region.label} ×${count}` : null;
+    }).filter(Boolean);
+
+    return `
+      <div class="review-interest-group">
+        <h4>${escapeHTML(level.label)}</h4>
+        ${entries.length ? `<ul class="review-bullet-list">${entries.map((entry) => `<li>${escapeHTML(entry)}</li>`).join('')}</ul>` : '<p class="review-empty">None yet.</p>'}
+      </div>
+    `;
+  }).join('');
+
+  return `<div class="review-interest-grid">${groups}</div>`;
+}
+
+function capitalize(value) {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
+}
+
+function escapeHTML(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 document.addEventListener('DOMContentLoaded', init);

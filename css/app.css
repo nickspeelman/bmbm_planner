@@ -1656,3 +1656,363 @@ h2 {
   }
 }
 
+
+
+/* FINAL FLOATING HELPER POSITION OVERRIDES
+   Lower-ear selections open the helper at the top of the diagram so it does
+   not cover the lobe / anti-tragus area being edited. */
+.ear-stage-wrap.compact-stage > .floating-helper.helper-at-top {
+  top: 10px !important;
+  bottom: auto !important;
+}
+
+.ear-stage-wrap.compact-stage > .floating-helper.helper-at-bottom {
+  top: auto !important;
+  bottom: 10px !important;
+}
+
+/* v1 flow additions: contact, starting point, lifestyle, review */
+.form-card h1,
+.review-card h1 {
+  font-size: clamp(1.8rem, 8.6vw, 2.65rem);
+}
+
+.form-stack {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.field-label {
+  color: var(--accent-dark);
+  font-size: 0.82rem;
+  font-weight: 820;
+  letter-spacing: 0.02em;
+}
+
+.required-mark,
+.optional-mark {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.soft-input,
+.soft-textarea {
+  width: 100%;
+  border: 1px solid rgba(233, 217, 207, 0.95);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.66);
+  color: var(--text);
+  padding: 13px 14px;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  transition: border 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.soft-textarea {
+  resize: vertical;
+  min-height: 88px;
+  line-height: 1.4;
+}
+
+.soft-input:focus,
+.soft-textarea:focus {
+  border-color: rgba(154, 107, 88, 0.62);
+  background: #fffaf6;
+  box-shadow: 0 0 0 4px rgba(154, 107, 88, 0.10);
+}
+
+.form-error {
+  margin: -2px 0 4px;
+  color: #8c3f45;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.question-block {
+  margin-top: 22px;
+}
+
+.question-block h2 {
+  margin: 0 0 10px;
+  color: var(--text);
+  font-size: 1.02rem;
+}
+
+.soft-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.soft-chip-grid.three-up {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.soft-chip,
+.soft-choice {
+  min-height: 42px;
+  border: 1px solid rgba(233, 217, 207, 0.95);
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 10px 13px;
+  font-weight: 760;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 160ms ease, border 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.soft-chip {
+  flex: 1 1 auto;
+}
+
+.soft-chip:active,
+.soft-choice:active {
+  transform: scale(0.985);
+}
+
+.soft-chip.is-selected,
+.soft-choice.is-selected {
+  background: #fff2ea;
+  border-color: rgba(154, 107, 88, 0.62);
+  color: var(--accent-dark);
+  box-shadow: 0 8px 18px rgba(83, 58, 46, 0.08);
+}
+
+.soft-choice-list {
+  display: grid;
+  gap: 8px;
+}
+
+.soft-choice {
+  width: 100%;
+  border-radius: 18px;
+  padding: 13px 14px;
+}
+
+.conditional-field {
+  padding: 12px;
+  border: 1px solid rgba(233, 217, 207, 0.82);
+  border-radius: 20px;
+  background: rgba(255, 245, 238, 0.62);
+}
+
+.review-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.review-section {
+  border: 1px solid rgba(233, 217, 207, 0.95);
+  background: rgba(255, 245, 238, 0.68);
+  border-radius: 22px;
+  padding: 14px;
+}
+
+.review-section h2 {
+  margin: 0 0 10px;
+  color: var(--accent-dark);
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.review-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.review-row {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(233, 217, 207, 0.72);
+}
+
+.review-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.review-row dt,
+.review-ear-block h3,
+.review-interest-group h4 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 850;
+}
+
+.review-row dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 720;
+  line-height: 1.35;
+}
+
+.review-ear-block {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.review-ear-block + .review-ear-block {
+  margin-top: 8px;
+}
+
+.review-bullet-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text);
+  line-height: 1.45;
+  font-weight: 680;
+}
+
+.review-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.review-interest-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.review-interest-group {
+  padding: 9px;
+  border-radius: 14px;
+  background: rgba(255, 250, 246, 0.68);
+}
+
+.review-interest-group h4 {
+  margin-bottom: 6px;
+  color: var(--accent-dark);
+}
+
+.placeholder-submit:disabled {
+  opacity: 0.58;
+}
+
+/* v1 final overrides after v0 button rules */
+.single-back-row {
+  grid-template-columns: 1fr !important;
+}
+
+.form-card .button-row > .primary-btn,
+.review-card .button-row > .primary-btn,
+.form-card .button-row > .secondary-btn,
+.review-card .button-row > .secondary-btn {
+  white-space: normal !important;
+  line-height: 1.12 !important;
+}
+
+@media (max-width: 420px) {
+  .form-card h1,
+  .review-card h1 {
+    font-size: clamp(1.55rem, 7.6vw, 2.1rem);
+  }
+
+  .question-block {
+    margin-top: 18px;
+  }
+
+  .soft-chip,
+  .soft-choice {
+    font-size: 0.9rem;
+  }
+
+  .soft-chip-grid.three-up {
+    gap: 6px;
+  }
+
+  .soft-chip-grid.three-up .soft-chip {
+    padding-left: 8px;
+    padding-right: 8px;
+    text-align: center;
+  }
+}
+
+
+/* v1.1: vague progress labels + calmer lifestyle screen controls */
+#card-9 .question-block {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(233, 217, 207, 0.82);
+  border-radius: 20px;
+  background: rgba(255, 245, 238, 0.58);
+}
+
+#card-9 .question-block + .question-block {
+  margin-top: 12px;
+}
+
+#card-9 .question-block h2 {
+  margin: 0 0 10px;
+  font-size: 0.98rem;
+  letter-spacing: -0.01em;
+}
+
+#card-9 .soft-chip-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+#card-9 .soft-chip {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 46px;
+  border-radius: 16px;
+  padding: 11px 14px;
+  background: rgba(255, 255, 255, 0.54);
+  border: 1px solid rgba(233, 217, 207, 0.95);
+  color: var(--text);
+  box-shadow: none;
+  text-align: left;
+  line-height: 1.15;
+}
+
+#card-9 .soft-chip.is-selected {
+  background: #fff2ea;
+  border-color: rgba(154, 107, 88, 0.56);
+  color: var(--accent-dark);
+  box-shadow: 0 6px 16px rgba(83, 58, 46, 0.07);
+}
+
+#card-9 .soft-chip.is-selected::before {
+  content: "✓";
+  width: 22px;
+  height: 22px;
+  margin-right: 8px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--accent-dark);
+  color: #fffaf6;
+  font-size: 0.78rem;
+  font-weight: 850;
+  flex: 0 0 auto;
+}
+
+@media (min-width: 460px) {
+  #card-9 .soft-chip-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  #card-9 .soft-chip {
+    font-size: 0.88rem;
+  }
+}

@@ -14,10 +14,114 @@
         <span class="progress-dot" data-progress="2"></span>
         <span class="progress-dot" data-progress="3"></span>
         <span class="progress-dot" data-progress="4"></span>
+        <span class="progress-dot" data-progress="5"></span>
+        <span class="progress-dot" data-progress="6"></span>
+        <span class="progress-dot" data-progress="7"></span>
+        <span class="progress-dot" data-progress="8"></span>
+        <span class="progress-dot" data-progress="9"></span>
+        <span class="progress-dot" data-progress="10"></span>
       </div>
 
-      <div id="card-1" class="step-card is-active" data-step="1">
-        <p class="eyebrow">Step 1 of 4</p>
+      <div id="card-1" class="step-card is-active form-card" data-step="1">
+        <p class="eyebrow">Getting started</p>
+        <h1>Let’s Start With the Basics</h1>
+        <p class="subtext">So Michele can connect your ear plan with you.</p>
+
+        <div class="form-stack">
+          <label class="field-label" for="contact-first-name">First name <span class="required-mark">required</span></label>
+          <input id="contact-first-name" class="soft-input" type="text" autocomplete="given-name" data-contact-field="firstName" />
+          <p id="first-name-error" class="form-error is-hidden">Please add your first name.</p>
+
+          <label class="field-label" for="contact-last-name">Last name <span class="optional-mark">optional</span></label>
+          <input id="contact-last-name" class="soft-input" type="text" autocomplete="family-name" data-contact-field="lastName" />
+
+          <label class="field-label" for="contact-email">Email <span class="required-mark">required</span></label>
+          <input id="contact-email" class="soft-input" type="email" autocomplete="email" data-contact-field="email" />
+          <p id="email-error" class="form-error is-hidden">Please add a valid email address.</p>
+
+          <label class="field-label" for="contact-phone">Phone <span class="optional-mark">optional</span></label>
+          <input id="contact-phone" class="soft-input" type="tel" autocomplete="tel" data-contact-field="phone" />
+        </div>
+
+        <div class="question-block">
+          <h2>Preferred contact method</h2>
+          <div class="soft-chip-grid three-up" role="group" aria-label="Preferred contact method">
+            <button class="soft-chip" type="button" data-contact-choice="preferredContact" data-value="email">Email</button>
+            <button class="soft-chip" type="button" data-contact-choice="preferredContact" data-value="text">Text</button>
+            <button class="soft-chip" type="button" data-contact-choice="preferredContact" data-value="either">Either</button>
+          </div>
+        </div>
+
+        <div class="question-block">
+          <h2>Appointment status</h2>
+          <div class="soft-choice-list" role="group" aria-label="Appointment status">
+            <button class="soft-choice" type="button" data-contact-choice="appointmentStatus" data-value="already-booked">I already have an appointment</button>
+            <button class="soft-choice" type="button" data-contact-choice="appointmentStatus" data-value="thinking">I’m thinking about booking</button>
+            <button class="soft-choice" type="button" data-contact-choice="appointmentStatus" data-value="exploring">I’m just exploring</button>
+          </div>
+        </div>
+
+        <div id="appointment-date-wrap" class="form-stack conditional-field is-hidden">
+          <label class="field-label" for="appointment-date-time">Appointment date/time, if you know it <span class="optional-mark">optional</span></label>
+          <input id="appointment-date-time" class="soft-input" type="text" data-contact-field="appointmentDateTime" placeholder="Tuesday at 2:30, June 14, etc." />
+        </div>
+
+        <button class="primary-btn" type="button" id="contact-continue-btn">Continue</button>
+      </div>
+
+      <div id="card-2" class="step-card form-card" data-step="2">
+        <p class="eyebrow">Starting point</p>
+        <h1>What brings you in?</h1>
+        <p class="subtext">This helps Michele understand the occasion, goal, or starting point.</p>
+
+        <div class="question-block">
+          <h2>What are you hoping for?</h2>
+          <div class="soft-chip-grid" role="group" aria-label="What are you hoping for">
+            <button class="soft-chip" type="button" data-hope="event">Something special for an event</button>
+            <button class="soft-chip" type="button" data-hope="bridal">Wedding / bridal look</button>
+            <button class="soft-chip" type="button" data-hope="milestone">Birthday or milestone</button>
+            <button class="soft-chip" type="button" data-hope="new-piercing">New piercing</button>
+            <button class="soft-chip" type="button" data-hope="refresh">Jewelry refresh</button>
+            <button class="soft-chip" type="button" data-hope="curated-project">Curated ear project</button>
+            <button class="soft-chip" type="button" data-hope="help-deciding">Help deciding what fits</button>
+            <button class="soft-chip" type="button" data-hope="exploring">Just exploring</button>
+            <button class="soft-chip" type="button" data-hope="other">Other</button>
+          </div>
+        </div>
+
+        <div id="event-date-wrap" class="form-stack conditional-field is-hidden">
+          <label class="field-label" for="event-date">Event date, if you know it <span class="optional-mark">optional</span></label>
+          <input id="event-date" class="soft-input" type="text" data-starting-field="eventDate" placeholder="Date, month, or general timing" />
+        </div>
+
+        <div id="other-hope-wrap" class="form-stack conditional-field is-hidden">
+          <label class="field-label" for="other-hope-details">Tell Michele a little more <span class="optional-mark">optional</span></label>
+          <textarea id="other-hope-details" class="soft-textarea" rows="3" data-starting-field="otherHopeDetails" placeholder="Anniversary, graduation, matching piercing, personal celebration, something symbolic…"></textarea>
+        </div>
+
+        <div class="question-block">
+          <h2>Do you already have any ideas?</h2>
+          <div class="soft-choice-list" role="group" aria-label="Do you already have any ideas">
+            <button class="soft-choice" type="button" data-idea-clarity="exact">I know exactly what I want</button>
+            <button class="soft-choice" type="button" data-idea-clarity="few-ideas">I have a few ideas</button>
+            <button class="soft-choice" type="button" data-idea-clarity="vibe">I have a vibe, but not a specific piercing</button>
+            <button class="soft-choice" type="button" data-idea-clarity="open">I’m totally open</button>
+          </div>
+        </div>
+
+        <div class="form-stack">
+          <label class="field-label" for="initial-ideas">Anything you already have in mind? <span class="optional-mark">optional</span></label>
+          <textarea id="initial-ideas" class="soft-textarea" rows="3" data-starting-field="initialIdeas" placeholder="Wedding earrings, subtle sparkle, birthstone, something celestial, matching with my daughter, not sure yet…"></textarea>
+        </div>
+
+        <div class="button-row">
+          <button class="secondary-btn" type="button" data-prev-step="1">Back</button>
+          <button class="primary-btn" type="button" data-next-step="3">Continue</button>
+        </div>
+      </div>
+
+      <div id="card-3" class="step-card is-active" data-step="3">
+        <p class="eyebrow">Ear planning</p>
         <h1>Which ear are we planning?</h1>
         <p class="subtext">We’ll tailor ideas to the ear you’re curious about.</p>
 
@@ -38,9 +142,8 @@
 
         <p id="both-helper" class="helper-text is-hidden">You’ll be able to explore each side separately.</p>
       </div>
-
-      <div id="card-2" class="step-card" data-step="2">
-        <p class="eyebrow">Step 2 of 4</p>
+      <div id="card-4" class="step-card" data-step="4">
+        <p class="eyebrow">Ear planning</p>
         <h1>Which looks most like your lobe?</h1>
         <p class="subtext">This helps Michele think about spacing and jewelry placement.</p>
 
@@ -78,12 +181,21 @@
         </div>
 
         <div class="button-row single-back-row">
-          <button class="secondary-btn" type="button" data-prev-step="1">Back</button>
+          <button class="secondary-btn" type="button" data-prev-step="3">Back</button>
         </div>
       </div>
+      <div id="card-5" class="step-card title-card" data-step="5">
+        <p class="eyebrow">Current piercings</p>
+        <h1>First, let Michele know about your current piercings.</h1>
+        <p class="subtext">You’ll tap the ear diagram to mark the piercings you already have.</p>
 
-      <div id="card-3" class="step-card map-card" data-step="3">
-        <p class="eyebrow">Step 3 of 4</p>
+        <div class="button-row map-nav-row">
+          <button class="secondary-btn" type="button" data-prev-step="4">Back</button>
+          <button class="primary-btn" type="button" data-next-step="6">Okay</button>
+        </div>
+      </div>
+      <div id="card-6" class="step-card map-card" data-step="6">
+        <p class="eyebrow">Current piercings</p>
         <h1>What do you already have?</h1>
         <p class="subtext compact-intro">Tap the ear to place each current piercing. Tap a marker to remove it.</p>
 
@@ -113,15 +225,24 @@
         </div>
 
         <div class="button-row map-nav-row">
-          <button class="secondary-btn" type="button" data-prev-step="2">Back</button>
-          <button class="primary-btn" type="button" data-next-step="4">Continue</button>
+          <button class="secondary-btn" type="button" data-prev-step="5">Back</button>
+          <button class="primary-btn" type="button" data-next-step="7">Continue</button>
         </div>
       </div>
+      <div id="card-7" class="step-card title-card" data-step="7">
+        <p class="eyebrow">Future ideas</p>
+        <h1>Next, we’re going to look at what piercings you might be interested in.</h1>
+        <p class="subtext">No commitments. We’re just exploring.</p>
 
-      <div id="card-4" class="step-card map-card" data-step="4">
-        <p class="eyebrow">Step 4 of 4</p>
+        <div class="button-row map-nav-row">
+          <button class="secondary-btn" type="button" data-prev-step="6">Back</button>
+          <button class="primary-btn" type="button" data-next-step="8">Okay</button>
+        </div>
+      </div>
+      <div id="card-8" class="step-card map-card" data-step="8">
+        <p class="eyebrow">Future ideas</p>
         <h1>What might you want next?</h1>
-        <p class="subtext compact-intro">Tap a spot, then choose Love it, Interested, or Curious. No commitments. Just inspiration.</p>
+        <p class="subtext compact-intro">Tap a spot, then choose Love it, Curious, or Maybe someday. No commitments. Just inspiration.</p>
 
         <div id="future-map-side-toggle" class="side-tabs compact-side-tabs is-hidden" role="group" aria-label="Choose which ear to map">
           <button type="button" data-map-side="left">Left Ear</button>
@@ -149,8 +270,80 @@
         </div>
 
         <div class="button-row map-nav-row">
-          <button class="secondary-btn" type="button" data-prev-step="3">Back</button>
-          <button class="primary-btn" type="button" id="finish-btn">Done</button>
+          <button class="secondary-btn" type="button" data-prev-step="7">Back</button>
+          <button class="primary-btn" type="button" data-next-step="9">Continue</button>
+        </div>
+      </div>
+
+      <div id="card-9" class="step-card form-card" data-step="9">
+        <p class="eyebrow">Lifestyle notes</p>
+        <h1>A Few Lifestyle Notes</h1>
+        <p class="subtext">These help Michele think through comfort, healing, and timing.</p>
+
+        <div class="question-block">
+          <h2>Which side do you usually sleep on?</h2>
+          <div class="soft-chip-grid" role="group" aria-label="Sleep side">
+            <button class="soft-chip" type="button" data-lifestyle-choice="sleepSide" data-value="left">Left</button>
+            <button class="soft-chip" type="button" data-lifestyle-choice="sleepSide" data-value="right">Right</button>
+            <button class="soft-chip" type="button" data-lifestyle-choice="sleepSide" data-value="both">Both</button>
+            <button class="soft-chip" type="button" data-lifestyle-choice="sleepSide" data-value="back">Back sleeper</button>
+            <button class="soft-chip" type="button" data-lifestyle-choice="sleepSide" data-value="changes">It changes</button>
+          </div>
+        </div>
+
+        <div class="question-block">
+          <h2>Any of these part of your routine?</h2>
+          <div class="soft-chip-grid" role="group" aria-label="Daily routine">
+            <button class="soft-chip" type="button" data-routine="earbuds">Earbuds</button>
+            <button class="soft-chip" type="button" data-routine="over-ear-headphones">Over-ear headphones</button>
+            <button class="soft-chip" type="button" data-routine="glasses">Glasses</button>
+            <button class="soft-chip" type="button" data-routine="helmets">Helmets</button>
+            <button class="soft-chip" type="button" data-routine="hair-covers-ears">Hair often covers ears</button>
+            <button class="soft-chip" type="button" data-routine="swimming-soon">Swimming soon</button>
+            <button class="soft-chip" type="button" data-routine="sports-gym">Sports / gym</button>
+            <button class="soft-chip" type="button" data-routine="none">None of these</button>
+          </div>
+        </div>
+
+        <div class="question-block">
+          <h2>How have piercings healed for you in the past?</h2>
+          <div class="soft-chip-grid" role="group" aria-label="Healing history">
+            <button class="soft-chip" type="button" data-lifestyle-choice="healingHistory" data-value="easy">Easy</button>
+            <button class="soft-chip" type="button" data-lifestyle-choice="healingHistory" data-value="mixed">Mixed</button>
+            <button class="soft-chip" type="button" data-lifestyle-choice="healingHistory" data-value="sensitive">Sensitive / tricky</button>
+            <button class="soft-chip" type="button" data-lifestyle-choice="healingHistory" data-value="first-piercing">First piercing</button>
+            <button class="soft-chip" type="button" data-lifestyle-choice="healingHistory" data-value="not-sure">Not sure</button>
+          </div>
+        </div>
+
+        <div class="question-block">
+          <h2>Anything coming up that might affect healing?</h2>
+          <div class="soft-chip-grid" role="group" aria-label="Timing considerations">
+            <button class="soft-chip" type="button" data-timing="vacation">Vacation</button>
+            <button class="soft-chip" type="button" data-timing="swimming">Swimming</button>
+            <button class="soft-chip" type="button" data-timing="wedding-photos">Wedding / photos</button>
+            <button class="soft-chip" type="button" data-timing="sports-season">Sports season</button>
+            <button class="soft-chip" type="button" data-timing="big-event">Big event</button>
+            <button class="soft-chip" type="button" data-timing="nothing-special">Nothing special</button>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button class="secondary-btn" type="button" data-prev-step="8">Back</button>
+          <button class="primary-btn" type="button" data-next-step="10">Review My Ear Plan</button>
+        </div>
+      </div>
+
+      <div id="card-10" class="step-card review-card" data-step="10">
+        <p class="eyebrow">Review</p>
+        <h1>Your Ear Plan</h1>
+        <p class="subtext">Here’s what Michele would see so far.</p>
+
+        <div id="review-summary" class="review-summary" aria-live="polite"></div>
+
+        <div class="button-row">
+          <button class="secondary-btn" type="button" data-prev-step="9">Back</button>
+          <button class="primary-btn placeholder-submit" type="button" disabled>Submit Coming Later</button>
         </div>
       </div>
     </section>
