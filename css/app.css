@@ -1625,3 +1625,34 @@ h2 {
   display: block !important;
 }
 
+/* FINAL INTEREST BUTTON WIDTH OVERRIDES
+   Keep Step 4 interest choices equal-width, like paired nav buttons.
+   This intentionally sits after all previous mobile/helper rules. */
+.floating-helper .primary-interest-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+  align-items: stretch !important;
+}
+
+.floating-helper .primary-interest-actions .interest-choice {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+}
+
+.floating-helper .primary-interest-actions .interest-choice-label,
+.floating-helper .primary-interest-actions .interest-choice-sub {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+@media (max-width: 420px) {
+  .floating-helper .primary-interest-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+}
+
