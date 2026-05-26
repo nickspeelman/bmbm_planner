@@ -502,3 +502,316 @@ h2 {
   .planner-card { min-height: auto; }
   .choice-grid { grid-template-columns: 1fr; }
 }
+
+/* Region-based ear planner additions */
+.section-subtext.compact {
+  margin-top: 8px;
+  margin-bottom: 14px;
+}
+
+.interest-picker {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 8px;
+  margin: 12px 0 16px;
+  background: #f0e0d6;
+  border-radius: 20px;
+}
+
+.interest-picker button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--accent-dark);
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.interest-picker button.is-selected {
+  background: #fffaf6;
+  box-shadow: 0 6px 16px rgba(83, 58, 46, 0.08);
+}
+
+.region-layer,
+.marker-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.region-layer {
+  z-index: 2;
+}
+
+.marker-layer {
+  z-index: 3;
+  pointer-events: none;
+}
+
+.ear-region {
+  fill: rgba(154, 107, 88, 0.001);
+  stroke: transparent;
+  stroke-width: 2;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: fill 160ms ease, stroke 160ms ease, opacity 160ms ease;
+}
+
+.ear-region:hover,
+.ear-region:focus-visible {
+  fill: rgba(154, 107, 88, 0.12);
+  stroke: rgba(154, 107, 88, 0.28);
+  outline: none;
+}
+
+.ear-region.is-selected {
+  fill: rgba(154, 107, 88, 0.22);
+  stroke: rgba(111, 70, 56, 0.52);
+}
+
+.ear-stage.is-right .ear-region,
+.ear-stage.is-right .ear-marker {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.chip.is-selected-region {
+  background: #fff2ea;
+  color: var(--accent-dark);
+  border-color: rgba(154, 107, 88, 0.62);
+  box-shadow: 0 8px 18px rgba(83, 58, 46, 0.08);
+}
+
+.chip.has-count:not(.is-selected-region) {
+  border-color: rgba(154, 107, 88, 0.42);
+  background: rgba(255, 242, 234, 0.68);
+  color: var(--accent-dark);
+}
+
+.tally-panel {
+  margin-top: 18px;
+  border: 1px solid rgba(233, 217, 207, 0.95);
+  background: rgba(255, 245, 238, 0.72);
+  border-radius: 22px;
+  padding: 16px;
+}
+
+.tally-panel h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-dark);
+}
+
+.empty-tally {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.4;
+  font-size: 0.94rem;
+}
+
+.tally-list {
+  display: grid;
+  gap: 8px;
+}
+
+.tally-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 8px 8px 12px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(233, 217, 207, 0.82);
+  border-radius: 16px;
+}
+
+.tally-label {
+  font-weight: 720;
+  color: var(--text);
+}
+
+.tally-remove {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--soft-2);
+  color: var(--accent-dark);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.detail-helper {
+  margin-top: 10px !important;
+  color: var(--accent-dark) !important;
+}
+
+.ear-marker.state-existing-muted .marker-dot,
+.ear-marker.state-existing-muted .marker-industrial-end {
+  fill: #b7aaa3;
+  opacity: 0.58;
+}
+
+.ear-marker.state-existing-muted .marker-ring,
+.ear-marker.state-existing-muted .marker-bar {
+  stroke: #b7aaa3;
+  opacity: 0.58;
+}
+
+.ear-marker.state-definite .marker-dot,
+.ear-marker.state-definite .marker-industrial-end {
+  fill: var(--accent-dark);
+}
+
+.ear-marker.state-definite .marker-ring,
+.ear-marker.state-definite .marker-bar {
+  stroke: var(--accent-dark);
+}
+
+.ear-marker.state-moderate .marker-dot,
+.ear-marker.state-moderate .marker-industrial-end {
+  fill: #b88272;
+  opacity: 0.84;
+}
+
+.ear-marker.state-moderate .marker-ring,
+.ear-marker.state-moderate .marker-bar {
+  stroke: #b88272;
+  opacity: 0.84;
+}
+
+.ear-marker.state-curious .marker-dot,
+.ear-marker.state-curious .marker-industrial-end {
+  fill: #d8bdb0;
+  opacity: 0.62;
+}
+
+.ear-marker.state-curious .marker-ring,
+.ear-marker.state-curious .marker-bar {
+  stroke: #d8bdb0;
+  opacity: 0.62;
+}
+
+@media (min-width: 460px) {
+  .interest-picker {
+    grid-template-columns: repeat(3, 1fr);
+    border-radius: 999px;
+  }
+
+  .interest-picker button {
+    border-radius: 999px;
+  }
+}
+
+
+/* Updated interest helper + removal interactions */
+.interest-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.interest-actions button {
+  min-height: 42px;
+  border: 1px solid rgba(154, 107, 88, 0.28);
+  border-radius: 999px;
+  background: #fff2ea;
+  color: var(--accent-dark);
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.interest-actions button:active,
+.tally-item:active {
+  transform: scale(0.985);
+}
+
+.detail-helper.small {
+  font-size: 0.9rem;
+  color: var(--muted) !important;
+}
+
+.marker-layer {
+  pointer-events: none;
+}
+
+.ear-marker.is-removable {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.marker-remove-hit {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 24;
+  pointer-events: all;
+}
+
+.ear-marker.is-removable:focus-visible .marker-dot,
+.ear-marker.is-removable:hover .marker-dot,
+.ear-marker.is-removable:focus-visible .marker-industrial-end,
+.ear-marker.is-removable:hover .marker-industrial-end {
+  stroke-width: 6;
+}
+
+.ear-marker.is-removable:focus-visible .marker-ring,
+.ear-marker.is-removable:hover .marker-ring,
+.ear-marker.is-removable:focus-visible .marker-bar,
+.ear-marker.is-removable:hover .marker-bar {
+  stroke-width: 7;
+}
+
+.tally-item {
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, border 160ms ease;
+}
+
+.tally-item:hover,
+.tally-item:focus-visible {
+  background: #fff2ea;
+  border-color: rgba(154, 107, 88, 0.42);
+  outline: none;
+}
+
+.tally-remove {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.ear-marker.state-love .marker-dot,
+.ear-marker.state-love .marker-industrial-end {
+  fill: var(--accent-dark);
+}
+
+.ear-marker.state-love .marker-ring,
+.ear-marker.state-love .marker-bar {
+  stroke: var(--accent-dark);
+}
+
+.ear-marker.state-maybe .marker-dot,
+.ear-marker.state-maybe .marker-industrial-end {
+  fill: #b88272;
+  opacity: 0.84;
+}
+
+.ear-marker.state-maybe .marker-ring,
+.ear-marker.state-maybe .marker-bar {
+  stroke: #b88272;
+  opacity: 0.84;
+}
+
+@media (min-width: 460px) {
+  .interest-actions {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
