@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ear Consultation Planner</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <main id="ear-planner" class="planner-shell">
+    <section class="planner-card" aria-live="polite">
+      <div class="progress" aria-label="Step progress">
+        <span class="progress-dot is-active" data-progress="1"></span>
+        <span class="progress-dot" data-progress="2"></span>
+        <span class="progress-dot" data-progress="3"></span>
+      </div>
+
+      <div id="card-1" class="step-card is-active" data-step="1">
+        <p class="eyebrow">Step 1 of 3</p>
+        <h1>Which ear are we planning?</h1>
+        <p class="subtext">We’ll tailor ideas to the ear you’re curious about.</p>
+
+        <div class="choice-grid" role="group" aria-label="Choose ear">
+          <button class="choice-card" type="button" data-ear-choice="left">
+            <span class="choice-icon ear-icon-left">◖</span>
+            <span class="choice-title">Left Ear</span>
+          </button>
+          <button class="choice-card" type="button" data-ear-choice="right">
+            <span class="choice-icon ear-icon-right">◗</span>
+            <span class="choice-title">Right Ear</span>
+          </button>
+          <button class="choice-card" type="button" data-ear-choice="both">
+            <span class="choice-icon">◖ ◗</span>
+            <span class="choice-title">Both Ears</span>
+          </button>
+        </div>
+
+        <p id="both-helper" class="helper-text is-hidden">You’ll be able to explore each side separately.</p>
+
+        <button class="primary-btn" type="button" data-next-step="2" disabled>Continue</button>
+      </div>
+
+      <div id="card-2" class="step-card" data-step="2">
+        <p class="eyebrow">Step 2 of 3</p>
+        <h1>Which looks most like your lobe?</h1>
+        <p class="subtext">This helps Michele think about spacing and jewelry placement.</p>
+
+        <div id="both-similar-panel" class="similar-panel is-hidden">
+          <p class="panel-question">Are both ears similar?</p>
+          <div class="segmented-control" role="group" aria-label="Are both ears similar">
+            <button type="button" data-similar-choice="yes">Yes</button>
+            <button type="button" data-similar-choice="no">No</button>
+          </div>
+        </div>
+
+        <div id="side-lobe-tabs" class="side-tabs is-hidden" role="group" aria-label="Choose side anatomy">
+          <button type="button" data-lobe-side="left">Left Ear</button>
+          <button type="button" data-lobe-side="right">Right Ear</button>
+        </div>
+
+        <div class="lobe-choice-grid" role="group" aria-label="Choose lobe shape">
+          <button class="lobe-card" type="button" data-lobe-choice="detached">
+            <span class="lobe-visual single"><img src="assets/ear-detached.svg" alt="Ear with detached rounded lobe" /></span>
+            <span class="choice-title">Detached</span>
+          </button>
+
+          <button class="lobe-card" type="button" data-lobe-choice="attached">
+            <span class="lobe-visual single"><img src="assets/ear-attached.svg" alt="Ear with attached connected lobe" /></span>
+            <span class="choice-title">Attached / Connected</span>
+          </button>
+
+          <button class="lobe-card" type="button" data-lobe-choice="unsure">
+            <span class="lobe-visual compare" aria-hidden="true">
+              <img src="assets/ear-detached.svg" alt="" />
+              <img src="assets/ear-attached.svg" alt="" />
+            </span>
+            <span class="choice-title">Not sure</span>
+          </button>
+        </div>
+
+        <div class="button-row">
+          <button class="secondary-btn" type="button" data-prev-step="1">Back</button>
+          <button id="lobe-continue" class="primary-btn" type="button" data-next-step="3" disabled>Continue</button>
+        </div>
+      </div>
+
+      <div id="card-3" class="step-card" data-step="3">
+        <p class="eyebrow">Step 3 of 3</p>
+        <h1>Let’s Map Your Ear</h1>
+        <p class="subtext">First show what you already have, then explore ideas for what might come next.</p>
+
+        <div id="map-side-toggle" class="side-tabs is-hidden" role="group" aria-label="Choose which ear to map">
+          <button type="button" data-map-side="left">Left Ear</button>
+          <button type="button" data-map-side="right">Right Ear</button>
+        </div>
+
+        <div id="existing-section" class="map-section is-active">
+          <h2>What piercings do you already have?</h2>
+          <div class="ear-stage-wrap">
+            <div id="ear-stage-existing" class="ear-stage" aria-label="Interactive ear map for existing piercings"></div>
+          </div>
+          <div id="existing-chips" class="chip-groups"></div>
+          <div id="existing-detail" class="detail-panel is-hidden"></div>
+          <button class="primary-btn" type="button" id="to-future-btn">Next: Explore Ideas</button>
+        </div>
+
+        <div id="future-section" class="map-section">
+          <h2>What catches your eye?</h2>
+          <p class="section-subtext">Tap anything you’re curious about.</p>
+          <div class="ear-stage-wrap">
+            <div id="ear-stage-future" class="ear-stage" aria-label="Interactive ear map for future piercing ideas"></div>
+          </div>
+          <div id="future-chips" class="chip-groups"></div>
+          <div id="future-detail" class="detail-panel is-hidden"></div>
+          <button class="secondary-btn full-width" type="button" id="back-to-existing-btn">Back to Existing Piercings</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
