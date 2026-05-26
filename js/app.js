@@ -152,18 +152,22 @@ const regions = [
   }
 ];
 
-const groups = ['LOBES', 'OUTER EAR', 'INNER EAR', 'ADVANCED'];
+const regionGroups = [
+  { id: 'outer', label: 'Outer', regionIds: ['helix', 'forwardHelix', 'flat', 'lobe'] },
+  { id: 'inner', label: 'Inner', regionIds: ['rook', 'daith', 'conch', 'tragus', 'antiTragus'] },
+  { id: 'other', label: 'Other', regionIds: ['industrial'] }
+];
 const interestLevels = [
-  { id: 'curious', label: 'Curious', short: 'Curious', markerState: 'curious' },
-  { id: 'maybe', label: 'Maybe', short: 'Maybe', markerState: 'maybe' },
-  { id: 'love', label: 'Love it', short: 'Love it', markerState: 'love' }
+  { id: 'love', label: 'Love it', short: 'Love it', markerState: 'love' },
+  { id: 'maybe', label: 'Interested', short: 'Interested', markerState: 'maybe' },
+  { id: 'curious', label: 'Curious', short: 'Curious', markerState: 'curious' }
 ];
 
-const emptyRegionCounts = () => Object.fromEntries(regions.map((region) => [region.id, 0]));
+const emptyRegionCounts = () => Object.fromEntries(regions.map((region) => [region.id, []]));
 const emptyFutureCounts = () => Object.fromEntries(
   regions.map((region) => [
     region.id,
-    Object.fromEntries(interestLevels.map((level) => [level.id, 0]))
+    Object.fromEntries(interestLevels.map((level) => [level.id, []]))
   ])
 );
 
@@ -177,6 +181,7 @@ const state = {
   existing: { left: emptyRegionCounts(), right: emptyRegionCounts() },
   future: { left: emptyFutureCounts(), right: emptyFutureCounts() },
   activeSection: 'existing',
+  summaryExpanded: false,
   selectedRegion: { existing: null, future: null },
   lastTouched: null
 };
@@ -199,6 +204,7 @@ function setupStepOne() {
       state.earChoice = button.dataset.earChoice;
       if (state.earChoice === 'left') state.mapSide = 'left';
       if (state.earChoice === 'right') state.mapSide = 'right';
+      state.step = 2;
       renderAll();
     });
   });
@@ -208,7 +214,12 @@ function setupStepTwo() {
   $$('[data-similar-choice]').forEach((button) => {
     button.addEventListener('click', () => {
       state.bothSimilar = button.dataset.similarChoice;
-      if (state.bothSimilar === 'yes') state.lobeEditSide = 'left';
+      if (state.bothSimilar === 'yes') {
+        state.lobeEditSide = 'left';
+      }
+      if (state.bothSimilar === 'no') {
+        state.lobeEditSide = state.lobe.left ? 'right' : 'left';
+      }
       renderAll();
     });
   });
@@ -226,11 +237,20 @@ function setupStepTwo() {
 
       if (state.earChoice === 'both' && state.bothSimilar === 'no') {
         state.lobe[state.lobeEditSide] = choice;
+        if (!state.lobe.left) {
+          state.lobeEditSide = 'left';
+        } else if (!state.lobe.right) {
+          state.lobeEditSide = 'right';
+        } else {
+          state.step = 3;
+        }
       } else if (state.earChoice === 'both') {
         state.lobe.left = choice;
         state.lobe.right = choice;
+        state.step = 3;
       } else {
         state.lobe[state.earChoice] = choice;
+        state.step = 3;
       }
 
       renderAll();
@@ -258,22 +278,26 @@ function setupMapControls() {
   $$('[data-map-side]').forEach((button) => {
     button.addEventListener('click', () => {
       state.mapSide = button.dataset.mapSide;
+      state.selectedRegion.existing = null;
+      state.selectedRegion.future = null;
       renderAll();
     });
   });
 
-
-  $('#to-future-btn').addEventListener('click', () => {
-    state.activeSection = 'future';
-    state.lastTouched = null;
-    renderAll();
+  $$('[data-summary-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.summaryExpanded = !state.summaryExpanded;
+      renderMapSteps();
+    });
   });
 
-  $('#back-to-existing-btn').addEventListener('click', () => {
-    state.activeSection = 'existing';
-    state.lastTouched = null;
-    renderAll();
-  });
+  const finishButton = $('#finish-btn');
+  if (finishButton) {
+    finishButton.addEventListener('click', () => {
+      state.summaryExpanded = true;
+      renderMapSteps();
+    });
+  }
 }
 
 function renderAll() {
@@ -281,7 +305,7 @@ function renderAll() {
   renderProgress();
   renderStepOne();
   renderStepTwo();
-  renderStepThree();
+  renderMapSteps();
 }
 
 function renderSteps() {
@@ -302,7 +326,6 @@ function renderStepOne() {
   });
 
   $('#both-helper').classList.toggle('is-hidden', state.earChoice !== 'both');
-  $('[data-next-step="2"]').disabled = !state.earChoice;
 }
 
 function renderStepTwo() {
@@ -323,7 +346,6 @@ function renderStepTwo() {
     button.classList.toggle('is-selected', button.dataset.lobeChoice === visibleChoice);
   });
 
-  $('#lobe-continue').disabled = !canContinueFromLobe();
 }
 
 function getVisibleLobeChoice() {
@@ -345,25 +367,35 @@ function canContinueFromLobe() {
   return Boolean(state.lobe[state.earChoice]);
 }
 
-function renderStepThree() {
+function renderMapSteps() {
+  renderMapWorkspace('existing');
+  renderMapWorkspace('future');
+}
+
+function renderMapWorkspace(mode) {
   const isBoth = state.earChoice === 'both';
-  $('#map-side-toggle').classList.toggle('is-hidden', !isBoth);
+  const prefix = mode === 'existing' ? 'existing' : 'future';
+
+  const sideToggle = $(`#${prefix}-map-side-toggle`);
+  if (sideToggle) sideToggle.classList.toggle('is-hidden', !isBoth);
 
   $$('[data-map-side]').forEach((button) => {
     button.classList.toggle('is-selected', button.dataset.mapSide === state.mapSide);
   });
 
+  const stage = $(`#${prefix}-ear-stage`);
+  if (stage) renderEarStage(stage, mode);
 
-  $('#existing-section').classList.toggle('is-active', state.activeSection === 'existing');
-  $('#future-section').classList.toggle('is-active', state.activeSection === 'future');
+  const chips = $(`#${prefix}-region-chips`);
+  if (chips) renderRegionPalette(chips, mode);
 
-  renderEarStage($('#ear-stage-existing'), 'existing');
-  renderEarStage($('#ear-stage-future'), 'future');
-  renderChips($('#existing-chips'), 'existing');
-  renderChips($('#future-chips'), 'future');
-  renderTally($('#existing-tally'), 'existing');
-  renderTally($('#future-tally'), 'future');
-  renderDetailPanels();
+  const detail = $(`#${prefix}-detail-panel`);
+  if (detail) renderDetailPanel(detail, mode);
+
+  renderSummary(mode);
+
+  const tally = $(`#${prefix}-tally-panel`);
+  if (tally) renderTally(tally, mode);
 }
 
 function currentSide() {
@@ -379,6 +411,46 @@ function anatomyForSide(side) {
 
 function regionById(id) {
   return regions.find((region) => region.id === id);
+}
+
+function countPlacements(value) {
+  return Array.isArray(value) ? value.length : Number(value || 0);
+}
+
+function placementPointFromEvent(event) {
+  const svg = event.currentTarget.ownerSVGElement;
+  if (!svg) return null;
+
+  const point = svg.createSVGPoint();
+  point.x = event.clientX;
+  point.y = event.clientY;
+
+  const matrix = svg.getScreenCTM();
+  if (!matrix) return null;
+
+  const transformed = point.matrixTransform(matrix.inverse());
+  return { x: transformed.x, y: transformed.y };
+}
+
+function fallbackPlacement(region, index = 0) {
+  if (region?.type === 'industrial') return industrialPlacement(region);
+  return markerPoint(region, index);
+}
+
+function industrialPlacement(region) {
+  const [start, end] = region?.positions || [];
+  return {
+    start: start || { x: 172, y: 128 },
+    end: end || { x: 376, y: 142 }
+  };
+}
+
+function hasIndustrialPlacement(side, mode, regionId) {
+  if (mode === 'existing') {
+    return countPlacements(state.existing[side][regionId]) > 0;
+  }
+
+  return totalFutureRegionCount(side, regionId) > 0;
 }
 
 function renderEarStage(container, mode) {
@@ -414,7 +486,7 @@ function makeRegionPath(region, mode) {
   path.setAttribute('role', 'button');
   path.setAttribute('tabindex', '0');
   path.setAttribute('aria-label', `${region.label} region`);
-  path.addEventListener('click', () => handleDiagramRegionTap(region.id, mode));
+  path.addEventListener('click', (event) => handleDiagramRegionTap(region.id, mode, placementPointFromEvent(event)));
   path.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -427,14 +499,14 @@ function makeRegionPath(region, mode) {
 function renderMarkers(markerLayer, mode, side) {
   if (mode === 'future') {
     regions.forEach((region) => {
-      const existingCount = state.existing[side][region.id] || 0;
-      addRegionMarkers(markerLayer, region, existingCount, 'existing-muted', { removable: false });
+      const existingPlacements = state.existing[side][region.id] || [];
+      addRegionMarkers(markerLayer, region, existingPlacements, 'existing-current', { removable: false });
     });
   }
 
   regions.forEach((region) => {
     if (mode === 'existing') {
-      addRegionMarkers(markerLayer, region, state.existing[side][region.id] || 0, 'existing', {
+      addRegionMarkers(markerLayer, region, state.existing[side][region.id] || [], 'existing', {
         removable: true,
         mode: 'existing',
         regionId: region.id
@@ -443,8 +515,8 @@ function renderMarkers(markerLayer, mode, side) {
     }
 
     interestLevels.forEach((level) => {
-      const count = state.future[side][region.id][level.id] || 0;
-      addRegionMarkers(markerLayer, region, count, level.markerState, {
+      const placements = state.future[side][region.id][level.id] || [];
+      addRegionMarkers(markerLayer, region, placements, level.markerState, {
         removable: true,
         mode: 'future',
         regionId: region.id,
@@ -454,10 +526,14 @@ function renderMarkers(markerLayer, mode, side) {
   });
 }
 
-function addRegionMarkers(markerLayer, region, count, markerState, options = {}) {
-  for (let index = 0; index < count; index += 1) {
-    markerLayer.appendChild(makeMarker(region, markerState, index, options));
-  }
+function addRegionMarkers(markerLayer, region, placements, markerState, options = {}) {
+  const points = Array.isArray(placements)
+    ? placements
+    : Array.from({ length: Number(placements || 0) }, (_, index) => fallbackPlacement(region, index));
+
+  points.forEach((point, index) => {
+    markerLayer.appendChild(makeMarker(region, markerState, index, { ...options, point, placementIndex: index }));
+  });
 }
 
 function markerPoint(region, index) {
@@ -495,7 +571,7 @@ function makeMarker(region, markerState, index = 0, options = {}) {
   }
 
   if (region.type === 'ring') {
-    const point = markerPoint(region, index);
+    const point = options.point || markerPoint(region, index);
     const ring = document.createElementNS(svgNS, 'circle');
     ring.setAttribute('class', 'marker-ring');
     ring.setAttribute('cx', point.x);
@@ -508,18 +584,16 @@ function makeMarker(region, markerState, index = 0, options = {}) {
 
   if (region.type === 'industrial') {
     const line = document.createElementNS(svgNS, 'line');
-    const lift = index * 9;
+    const { start, end } = industrialPlacement(region);
+
     line.setAttribute('class', 'marker-bar');
-    line.setAttribute('x1', 172);
-    line.setAttribute('y1', 128 + lift);
-    line.setAttribute('x2', 376);
-    line.setAttribute('y2', 142 + lift);
+    line.setAttribute('x1', start.x);
+    line.setAttribute('y1', start.y);
+    line.setAttribute('x2', end.x);
+    line.setAttribute('y2', end.y);
     group.appendChild(line);
 
-    [
-      { x: 172, y: 128 + lift },
-      { x: 376, y: 142 + lift }
-    ].forEach((point) => {
+    [start, end].forEach((point) => {
       const endpoint = document.createElementNS(svgNS, 'circle');
       endpoint.setAttribute('class', 'marker-industrial-end');
       endpoint.setAttribute('cx', point.x);
@@ -528,16 +602,16 @@ function makeMarker(region, markerState, index = 0, options = {}) {
       group.appendChild(endpoint);
     });
 
-    if (options.removable) group.appendChild(makeMarkerHit('industrial', null, index));
+    if (options.removable) group.appendChild(makeMarkerHit('industrial', { start, end }, index));
     return group;
   }
 
-  const point = markerPoint(region, index);
+  const point = options.point || markerPoint(region, index);
   const dot = document.createElementNS(svgNS, 'circle');
   dot.setAttribute('class', 'marker-dot');
   dot.setAttribute('cx', point.x);
   dot.setAttribute('cy', point.y);
-  dot.setAttribute('r', markerState === 'love' ? 10.5 : 9.2);
+  dot.setAttribute('r', markerState === 'existing-current' ? 11.8 : markerState === 'love' ? 10.8 : markerState === 'maybe' ? 10.2 : 9.4);
   group.appendChild(dot);
   if (options.removable) group.appendChild(makeMarkerHit('dot', point, index));
   return group;
@@ -546,12 +620,13 @@ function makeMarker(region, markerState, index = 0, options = {}) {
 function makeMarkerHit(kind, point, index = 0) {
   if (kind === 'industrial') {
     const hit = document.createElementNS(svgNS, 'line');
-    const lift = index * 9;
+    const start = point?.start || { x: 172, y: 128 };
+    const end = point?.end || { x: 376, y: 142 };
     hit.setAttribute('class', 'marker-remove-hit');
-    hit.setAttribute('x1', 172);
-    hit.setAttribute('y1', 128 + lift);
-    hit.setAttribute('x2', 376);
-    hit.setAttribute('y2', 142 + lift);
+    hit.setAttribute('x1', start.x);
+    hit.setAttribute('y1', start.y);
+    hit.setAttribute('x2', end.x);
+    hit.setAttribute('y2', end.y);
     return hit;
   }
 
@@ -566,49 +641,53 @@ function makeMarkerHit(kind, point, index = 0) {
 function removeMarker(options) {
   const side = currentSide();
   if (options.mode === 'existing') {
-    state.existing[side][options.regionId] = Math.max(0, (state.existing[side][options.regionId] || 0) - 1);
+    const placements = state.existing[side][options.regionId] || [];
+    placements.splice(options.placementIndex ?? placements.length - 1, 1);
     state.selectedRegion.existing = options.regionId;
     state.lastTouched = { id: options.regionId, mode: 'existing', source: 'marker-remove' };
   }
 
   if (options.mode === 'future') {
-    state.future[side][options.regionId][options.interestId] = Math.max(0, (state.future[side][options.regionId][options.interestId] || 0) - 1);
+    const placements = state.future[side][options.regionId][options.interestId] || [];
+    placements.splice(options.placementIndex ?? placements.length - 1, 1);
     state.selectedRegion.future = options.regionId;
     state.lastTouched = { id: options.regionId, mode: 'future', source: 'marker-remove' };
   }
 
-  renderStepThree();
+  renderMapSteps();
 }
 
-function renderChips(container, mode) {
+function renderRegionPalette(container, mode) {
   const side = currentSide();
   container.innerHTML = '';
 
-  groups.forEach((group) => {
-    const groupRegions = regions.filter((region) => region.group === group);
-    if (!groupRegions.length) return;
+  regionGroups.forEach((group) => {
+    const groupEl = document.createElement('section');
+    groupEl.className = 'region-palette-group';
 
-    const groupWrap = document.createElement('div');
     const label = document.createElement('p');
-    const row = document.createElement('div');
+    label.className = 'region-palette-label';
+    label.textContent = group.label;
+    groupEl.appendChild(label);
 
-    label.className = 'chip-group-label';
-    label.textContent = group;
-    row.className = 'chip-row';
+    const chipRow = document.createElement('div');
+    chipRow.className = 'region-palette-chips';
 
-    groupRegions.forEach((region) => {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = getChipClass(region.id, mode, side);
-      chip.textContent = getChipLabel(region, mode, side);
-      chip.setAttribute('aria-pressed', state.selectedRegion[mode] === region.id ? 'true' : 'false');
-      chip.addEventListener('click', () => handleChipTap(region.id, mode));
-      row.appendChild(chip);
-    });
+    group.regionIds
+      .map(regionById)
+      .filter(Boolean)
+      .forEach((region) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = getChipClass(region.id, mode, side);
+        chip.textContent = getChipLabel(region, mode, side);
+        chip.setAttribute('aria-pressed', state.selectedRegion[mode] === region.id ? 'true' : 'false');
+        chip.addEventListener('click', () => handleChipTap(region.id, mode));
+        chipRow.appendChild(chip);
+      });
 
-    groupWrap.appendChild(label);
-    groupWrap.appendChild(row);
-    container.appendChild(groupWrap);
+    groupEl.appendChild(chipRow);
+    container.appendChild(groupEl);
   });
 }
 
@@ -616,7 +695,7 @@ function getChipClass(id, mode, side) {
   const classes = ['chip'];
   if (state.selectedRegion[mode] === id) classes.push('is-selected-region');
 
-  if (mode === 'existing' && (state.existing[side][id] || 0) > 0) {
+  if (mode === 'existing' && countPlacements(state.existing[side][id]) > 0) {
     classes.push('has-count');
   }
 
@@ -627,44 +706,62 @@ function getChipClass(id, mode, side) {
   return classes.join(' ');
 }
 
-function getChipLabel(region, mode, side) {
-  if (mode === 'existing') {
-    const count = state.existing[side][region.id] || 0;
-    return count > 0 ? `${region.label} ×${count}` : region.label;
-  }
-
-  const count = totalFutureRegionCount(side, region.id);
-  return count > 0 ? `${region.label} ×${count}` : region.label;
+function getChipLabel(region) {
+  return region.label;
 }
 
 function handleChipTap(id, mode) {
   state.selectedRegion[mode] = id;
   state.lastTouched = { id, mode, source: 'chip' };
-  renderStepThree();
+  renderMapSteps();
 }
 
-function handleDiagramRegionTap(id, mode) {
+function handleDiagramRegionTap(id, mode, point = null) {
   const side = currentSide();
+  const region = regionById(id);
+  const fallbackIndex = mode === 'existing'
+    ? countPlacements(state.existing[side][id])
+    : totalFutureRegionCount(side, id);
+  const placement = region.type === 'industrial'
+    ? industrialPlacement(region)
+    : point || fallbackPlacement(region, fallbackIndex);
+
   state.selectedRegion[mode] = id;
-  state.lastTouched = { id, mode, source: 'diagram' };
+  state.lastTouched = { id, mode, source: 'diagram', point: placement };
 
   if (mode === 'existing') {
-    state.existing[side][id] = (state.existing[side][id] || 0) + 1;
+    if (region.type === 'industrial') {
+      if (!hasIndustrialPlacement(side, mode, id)) state.existing[side][id].push(placement);
+    } else {
+      state.existing[side][id].push(placement);
+    }
   }
 
-  renderStepThree();
-
-  const detailId = mode === 'existing' ? 'existing-detail' : 'future-detail';
-  const detail = $(`#${detailId}`);
-  detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  renderMapSteps();
 }
 
 function addFutureInterest(regionId, interestId) {
   const side = currentSide();
-  state.future[side][regionId][interestId] += 1;
+  const region = regionById(regionId);
+  const existingPlacements = state.future[side][regionId][interestId];
+  const placement = region.type === 'industrial'
+    ? industrialPlacement(region)
+    : (state.lastTouched?.mode === 'future' && state.lastTouched?.id === regionId && state.lastTouched?.point)
+      ? state.lastTouched.point
+      : fallbackPlacement(region, countPlacements(existingPlacements));
+
+  if (region.type === 'industrial') {
+    interestLevels.forEach((level) => {
+      state.future[side][regionId][level.id] = [];
+    });
+    state.future[side][regionId][interestId] = [placement];
+  } else {
+    existingPlacements.push(placement);
+  }
+
   state.selectedRegion.future = regionId;
-  state.lastTouched = { id: regionId, mode: 'future', source: 'interest-helper' };
-  renderStepThree();
+  state.lastTouched = { id: regionId, mode: 'future', source: 'interest-helper', point: placement };
+  renderMapSteps();
 }
 
 function renderTally(container, mode) {
@@ -682,7 +779,7 @@ function renderTally(container, mode) {
     empty.className = 'empty-tally';
     empty.textContent = mode === 'existing'
       ? 'Tap the diagram to add piercings you already have.'
-      : 'Tap the diagram to choose a placement, then pick Curious, Maybe, or Love it.';
+      : 'Tap the diagram to choose a placement, then pick Love it, Interested, or Curious.';
     container.appendChild(empty);
     return;
   }
@@ -725,8 +822,8 @@ function existingTallyEntries(side) {
   return regions
     .map((region) => ({
       regionId: region.id,
-      label: `${region.label} ×${state.existing[side][region.id] || 0}`,
-      count: state.existing[side][region.id] || 0
+      label: `${region.label} ×${countPlacements(state.existing[side][region.id])}`,
+      count: countPlacements(state.existing[side][region.id])
     }))
     .filter((entry) => entry.count > 0);
 }
@@ -735,7 +832,7 @@ function futureTallyEntries(side) {
   const entries = [];
   regions.forEach((region) => {
     interestLevels.forEach((level) => {
-      const count = state.future[side][region.id][level.id] || 0;
+      const count = countPlacements(state.future[side][region.id][level.id]);
       if (count > 0) {
         entries.push({
           regionId: region.id,
@@ -752,22 +849,50 @@ function futureTallyEntries(side) {
 function decrementTally(entry, mode) {
   const side = currentSide();
   if (mode === 'existing') {
-    state.existing[side][entry.regionId] = Math.max(0, (state.existing[side][entry.regionId] || 0) - 1);
+    state.existing[side][entry.regionId].pop();
   } else {
-    state.future[side][entry.regionId][entry.interestId] = Math.max(0, (state.future[side][entry.regionId][entry.interestId] || 0) - 1);
+    state.future[side][entry.regionId][entry.interestId].pop();
   }
   state.selectedRegion[mode] = entry.regionId;
   state.lastTouched = { id: entry.regionId, mode, source: 'tally' };
-  renderStepThree();
+  renderMapSteps();
 }
 
 function totalFutureRegionCount(side, id) {
-  return interestLevels.reduce((total, level) => total + (state.future[side][id][level.id] || 0), 0);
+  return interestLevels.reduce((total, level) => total + countPlacements(state.future[side][id][level.id]), 0);
 }
 
-function renderDetailPanels() {
-  renderDetailPanel($('#existing-detail'), 'existing');
-  renderDetailPanel($('#future-detail'), 'future');
+function renderSummary(mode) {
+  const side = currentSide();
+  const prefix = mode === 'existing' ? 'existing' : 'future';
+  const entries = mode === 'existing' ? existingTallyEntries(side) : futureTallyEntries(side);
+  const emptyText = mode === 'existing' ? 'Current piercings: none yet' : 'Ideas: none yet';
+  const filledText = mode === 'existing'
+    ? `Current piercings: ${entries.map((entry) => entry.label).join(', ')}`
+    : `Ideas: ${entries.map((entry) => entry.label).join(', ')}`;
+
+  const line = $(`#${prefix}-summary-line`);
+  const toggle = $(`#${prefix}-summary-toggle`);
+  const drawer = $(`#${prefix}-summary-drawer`);
+
+  if (line) line.textContent = entries.length ? filledText : emptyText;
+  if (toggle) toggle.setAttribute('aria-expanded', state.summaryExpanded ? 'true' : 'false');
+  if (drawer) drawer.classList.toggle('is-hidden', !state.summaryExpanded);
+}
+
+
+function interestButtonSubtext(id) {
+  if (id === 'love') return 'Top choice';
+  if (id === 'maybe') return 'Worth discussing';
+  if (id === 'curious') return 'Open to it';
+  return '';
+}
+
+function interestButtonIcon(id) {
+  if (id === 'love') return '★';
+  if (id === 'maybe') return '◆';
+  if (id === 'curious') return '?';
+  return '•';
 }
 
 function renderDetailPanel(panel, mode) {
@@ -777,35 +902,62 @@ function renderDetailPanel(panel, mode) {
   if (!selectedId) return;
 
   const region = regionById(selectedId);
+  const actionText = mode === 'existing'
+    ? (region.type === 'industrial'
+      ? 'Tap the highlighted area once to place the industrial bar.'
+      : 'Tap the highlighted area to add one you already have.')
+    : (region.type === 'industrial'
+      ? 'Tap the highlighted area, then choose an interest level. Only one industrial idea can be saved.'
+      : 'Tap the highlighted area to choose an exact placement, then pick an interest level.');
 
   if (mode === 'existing') {
     panel.innerHTML = `
+      <button class="helper-close" type="button" aria-label="Close helper">×</button>
       <h3>${region.label}</h3>
       <p>${region.copy}</p>
-      <p class="detail-helper"><strong>Tap this region on the diagram to add one existing piercing.</strong> Tap an existing marker on the ear, or tap the matching summary row below, to remove one.</p>
+      <p class="detail-helper"><strong>${actionText}</strong> Tap a marker or summary item to remove one.</p>
     `;
+    panel.querySelector('.helper-close').addEventListener('click', () => {
+      state.selectedRegion.existing = null;
+      renderMapSteps();
+    });
     return;
   }
 
   const side = currentSide();
   const currentCounts = interestLevels
-    .map((level) => ({ ...level, count: state.future[side][region.id][level.id] || 0 }))
+    .map((level) => ({ ...level, count: countPlacements(state.future[side][region.id][level.id]) }))
     .filter((level) => level.count > 0);
   const currentText = currentCounts.length
     ? currentCounts.map((level) => `${level.label} ×${level.count}`).join(' · ')
     : 'No interest level selected yet.';
 
   panel.innerHTML = `
-    <h3>${region.label}</h3>
-    <p>${region.copy}</p>
-    <p class="detail-helper"><strong>Current selection:</strong> ${currentText}</p>
-    <div class="interest-actions" role="group" aria-label="Choose interest level for ${region.label}">
-      ${interestLevels.map((level) => `
-        <button type="button" data-add-interest="${level.id}" data-region-id="${region.id}">${level.label}</button>
-      `).join('')}
+    <button class="helper-close" type="button" aria-label="Close helper">×</button>
+    <div class="interest-primary">
+      <p class="interest-kicker">${region.label}</p>
+      <h3>How interested are you?</h3>
+      <div class="interest-actions primary-interest-actions" role="group" aria-label="Choose interest level for ${region.label}">
+        ${interestLevels.map((level) => `
+          <button class="interest-choice interest-${level.id}" type="button" data-add-interest="${level.id}" data-region-id="${region.id}">
+            <span class="interest-choice-icon" aria-hidden="true">${interestButtonIcon(level.id)}</span>
+            <span class="interest-choice-label">${level.label}</span>
+            <span class="interest-choice-sub">${interestButtonSubtext(level.id)}</span>
+          </button>
+        `).join('')}
+      </div>
+      <p class="detail-helper small interest-current"><strong>Saved:</strong> ${currentText}</p>
     </div>
-    <p class="detail-helper small">Tap an interest level to add one ${region.label}. Tap a marker on the ear, or tap the matching summary row below, to remove one.</p>
+    <div class="region-context">
+      <p><strong>About the ${region.label}:</strong> ${region.copy}</p>
+      <p class="detail-helper small">${region.type === 'industrial' ? 'Industrial can only be saved once. Choosing another level replaces the previous one.' : 'Tap the ear first for exact placement. Tap a marker or summary item to remove one.'}</p>
+    </div>
   `;
+
+  panel.querySelector('.helper-close').addEventListener('click', () => {
+    state.selectedRegion.future = null;
+    renderMapSteps();
+  });
 
   panel.querySelectorAll('[data-add-interest]').forEach((button) => {
     button.addEventListener('click', () => addFutureInterest(button.dataset.regionId, button.dataset.addInterest));
