@@ -1,0 +1,333 @@
+/* Standalone Style Explorer additions. app.css supplies the core planner look. */
+
+.style-word-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.word-chip,
+.color-chip,
+.vibe-option,
+.pair-choice {
+  min-height: 46px;
+  border: 1px solid rgba(233, 217, 207, 0.95);
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--text);
+  border-radius: 18px;
+  padding: 11px 12px;
+  font-weight: 760;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.08;
+  transition: transform 160ms ease, border 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.word-chip:active,
+.color-chip:active,
+.vibe-option:active,
+.pair-choice:active {
+  transform: scale(0.985);
+}
+
+.word-chip.is-selected,
+.color-chip.is-selected,
+.vibe-option.is-selected,
+.pair-choice.is-selected {
+  background: #fff2ea;
+  border-color: rgba(154, 107, 88, 0.62);
+  color: var(--accent-dark);
+  box-shadow: 0 8px 18px rgba(83, 58, 46, 0.08);
+}
+
+.word-chip.is-negative-selected {
+  background: #f3e4dc;
+  color: #6f4638;
+  border-color: rgba(111, 70, 56, 0.36);
+}
+
+.word-chip .word-meta {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 730;
+  letter-spacing: 0.02em;
+}
+
+.route-card,
+.mini-note,
+.vector-note {
+  margin-top: 18px;
+  border: 1px solid rgba(233, 217, 207, 0.95);
+  background: rgba(255, 245, 238, 0.68);
+  border-radius: 22px;
+  padding: 14px;
+}
+
+.route-card p,
+.mini-note p,
+.vector-note p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.adaptive-round-card {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.adaptive-round-card .word-chip {
+  min-height: 64px;
+  border-radius: 22px;
+}
+
+.round-counter {
+  margin: 0 0 8px;
+  color: var(--accent-dark);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 850;
+}
+
+.vibe-list,
+.pair-list,
+.summary-stack {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.vibe-row,
+.pair-row,
+.debug-panel {
+  border: 1px solid rgba(233, 217, 207, 0.95);
+  background: rgba(255, 245, 238, 0.68);
+  border-radius: 22px;
+  padding: 14px;
+}
+
+.vibe-label,
+.pair-label {
+  margin: 0 0 10px;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.vibe-controls,
+.pair-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.vibe-option,
+.pair-choice {
+  min-height: 42px;
+  border-radius: 999px;
+  padding: 9px 10px;
+  text-align: center;
+  font-size: 0.88rem;
+}
+
+.pair-controls.two-up {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.debug-panel h2 {
+  margin: 0 0 10px;
+  color: var(--accent-dark);
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.debug-pre {
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.64);
+  color: var(--text);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.copy-status {
+  margin: 10px 0 0;
+  color: var(--accent-dark);
+  font-weight: 760;
+  font-size: 0.9rem;
+}
+
+.screen-actions {
+  margin-top: 22px;
+}
+
+.screen-actions .primary-btn,
+.screen-actions .secondary-btn {
+  white-space: normal !important;
+  line-height: 1.12 !important;
+}
+
+.warning-note {
+  margin-top: 16px;
+  color: #8c3f45;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  font-weight: 720;
+}
+
+@media (max-width: 420px) {
+  .style-word-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .word-chip,
+  .color-chip {
+    min-height: 43px;
+    font-size: 0.9rem;
+  }
+
+  .vibe-option,
+  .pair-choice {
+    font-size: 0.78rem;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}
+
+/* Backend-generated client summary + feedback */
+.client-summary-card {
+  margin-top: 16px;
+  border: 1px solid rgba(154, 107, 88, 0.22);
+  background: linear-gradient(180deg, #fff7f1, #f8e9e0);
+  border-radius: 24px;
+  padding: 16px;
+  box-shadow: 0 10px 28px rgba(83, 58, 46, 0.08);
+}
+
+.client-summary-card h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.18rem;
+  line-height: 1.28;
+  letter-spacing: -0.03em;
+}
+
+.client-summary-card p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.summary-eyebrow {
+  margin-bottom: 8px;
+}
+
+.thinking-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.thinking-row h2 {
+  margin-bottom: 4px;
+}
+
+.thinking-row p {
+  margin: 0;
+}
+
+.thinking-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--accent-dark);
+  animation: thinkingPulse 900ms ease-in-out infinite;
+}
+
+@keyframes thinkingPulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.84); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.error-card {
+  border-color: rgba(140, 63, 69, 0.32);
+  background: rgba(255, 242, 234, 0.9);
+}
+
+.summary-feedback {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(233, 217, 207, 0.95);
+}
+
+.feedback-label {
+  margin: 0;
+  color: var(--accent-dark) !important;
+  font-size: 0.9rem;
+  font-weight: 820;
+}
+
+.rating-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.rating-button {
+  min-height: 40px;
+  border: 1px solid rgba(233, 217, 207, 0.95);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--text);
+  font-weight: 830;
+  cursor: pointer;
+}
+
+.rating-button.is-selected {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+  color: #fffaf6;
+}
+
+.michele-summary-panel p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.45;
+  font-weight: 680;
+}
+
+.returned-summary-list {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(233, 217, 207, 0.72);
+}
+
+.returned-summary-list h3 {
+  margin: 0 0 6px;
+  color: var(--accent-dark);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.returned-summary-list ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text);
+  line-height: 1.45;
+}
