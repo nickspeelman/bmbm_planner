@@ -341,9 +341,9 @@ function renderIntro() {
     <div class="step-card is-active title-card">
       <p class="eyebrow">Style explorer</p>
       <h1>Let’s find your style.</h1>
-      <p class="subtext">Don’t worry about finding perfect words. This is just a way to give Michele a feel for what you’re drawn to, so your consultation can start in the right direction.</p>
+      <p class="subtext">Don’t worry about finding perfect words. You're not commiting to anything here. This is just a way to give Michele a feel for what you’re drawn to, so your styling session can start in the right direction.</p>
       <div class="mini-note">
-        <p>You’ll start with a couple of broad questions, then choose from a few small groups of words. There are no right answers — the goal is simply to give the consultation a better starting shape.</p>
+        <p>You’ll start with a couple of broad questions. If you're not sure how to answer those, don't worry. We'll walk you through it and try to help find the words. There are no right answers. The goal is simply to give us a jumping-off point when you come in for your appointment.</p>
       </div>
       <button class="primary-btn" type="button" data-go="preStyle">Continue</button>
     </div>
