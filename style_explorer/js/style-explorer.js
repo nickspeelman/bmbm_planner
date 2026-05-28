@@ -52,7 +52,7 @@ const state = {
     phase: 'before-midpoint',
     roundIndex: 0,
     beforeMidpointRounds: 3,
-    afterMidpointRounds: 3,
+    afterMidpointRounds: 2,
     currentRoundIds: []
   },
   midpoint: {
@@ -147,7 +147,7 @@ function normalizeVocabulary(raw) {
   const shortHigh = terms.filter((term) => term.termType !== 'single_word' && term.clientFacingPotential === 'high');
   const singleMedium = terms.filter((term) => term.termType === 'single_word' && term.clientFacingPotential !== 'low');
 
-  const initialScreen = takeDiverseTerms([...singleHigh, ...shortHigh, ...singleMedium], 28);
+  const initialScreen = takeDiverseTerms([...singleHigh, ...shortHigh, ...singleMedium], 22);
   const adaptiveRound = takeDiverseTerms(terms.filter((term) => term.clientFacingPotential !== 'low'), 220);
   const synopsis = terms.filter((term) => term.termType !== 'single_word' || term.clientFacingPotential === 'high').slice(0, 180);
 
@@ -908,7 +908,7 @@ function chooseAdaptiveTerms() {
 
   // First pass: stay fairly close to the working vector, but force variety.
   scored.slice(0, 36).forEach((item) => {
-    if (chosen.length >= 4) return;
+    if (chosen.length >= 5) return;
     if (usedSignals.has(item.signal)) return;
     if (usedTerritories.has(item.territory)) return;
     chosen.push(item);
@@ -918,7 +918,7 @@ function chooseAdaptiveTerms() {
 
   // Second pass: allow same territory, but avoid repeating the same dimension signal.
   scored.forEach((item) => {
-    if (chosen.length >= 4) return;
+    if (chosen.length >= 5) return;
     if (chosen.some((selected) => selected.term.id === item.term.id)) return;
     if (usedSignals.has(item.signal)) return;
     chosen.push(item);
@@ -927,12 +927,12 @@ function chooseAdaptiveTerms() {
 
   // Final fallback: fill any remaining slots.
   scored.forEach((item) => {
-    if (chosen.length >= 4) return;
+    if (chosen.length >= 5) return;
     if (chosen.some((selected) => selected.term.id === item.term.id)) return;
     chosen.push(item);
   });
 
-  return chosen.map((item) => item.term.id).slice(0, 4);
+  return chosen.map((item) => item.term.id).slice(0, 5);
 }
 
 function varietyBoost(term, index) {
@@ -1015,7 +1015,7 @@ function buildMidpointDescriptors() {
     .map((item) => item.term);
 
   return unique([...selectedCandidates, ...nearbySynopsis].map((term) => term.id))
-    .slice(0, 5)
+    .slice(0, 4)
     .map((id) => vocabulary.termsById[id])
     .filter(Boolean);
 }
@@ -1027,8 +1027,8 @@ function choosePairDimensions() {
     .sort((a, b) => b.abs - a.abs);
 
   const strong = sorted.slice(0, 3).map((item) => item.id);
-  const uncertain = sorted.slice().reverse().slice(0, 3).map((item) => item.id);
-  return unique([...strong, ...uncertain]).slice(0, 6);
+  const uncertain = sorted.slice().reverse().slice(0, 2).map((item) => item.id);
+  return unique([...strong, ...uncertain]).slice(0, 5);
 }
 
 function buildHandoff() {
@@ -1129,7 +1129,7 @@ function labelForPairChoice(dimension, selectedPole) {
 function hasMeaningfulText(value) {
   const trimmed = String(value || '').trim();
   const words = trimmed.split(/\s+/).filter(Boolean);
-  return trimmed.length >= 40 || words.length >= 6;
+  return trimmed.length >= 100 || words.length >= 12;
 }
 
 function cosineSimilarity(a, b) {
