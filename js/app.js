@@ -1,4 +1,4 @@
-const regions = [
+const FALLBACK_REGIONS = [
   {
     id: 'lobe',
     label: 'Lobe',
@@ -152,11 +152,106 @@ const regions = [
   }
 ];
 
-const regionGroups = [
+const FALLBACK_REGION_GROUPS = [
   { id: 'outer', label: 'Outer', regionIds: ['helix', 'forwardHelix', 'flat', 'lobe'] },
   { id: 'inner', label: 'Inner', regionIds: ['rook', 'daith', 'conch', 'tragus', 'antiTragus'] },
   { id: 'other', label: 'Other', regionIds: ['industrial'] }
 ];
+
+const EAR_MAP_CONFIG_URL = window.EAR_MAP_CONFIG_URL || 'data/ear-map-config.json';
+
+const DEFAULT_EAR_MAP_CONFIG = {
+  schemaVersion: 1,
+  configId: 'default-ear-map',
+  version: 1,
+  status: 'fallback',
+  viewBox: '0 0 454.96 568.7',
+  defaultAnatomy: 'detached',
+  regionGroups: FALLBACK_REGION_GROUPS,
+  anatomies: {
+    detached: {
+      baseImage: 'assets/ear-detached.svg',
+      regions: FALLBACK_REGIONS
+    },
+    attached: {
+      baseImage: 'assets/ear-attached.svg',
+      regions: FALLBACK_REGIONS
+    }
+  }
+};
+
+let earMapConfig = cloneConfig(DEFAULT_EAR_MAP_CONFIG);
+let regions = regionsForAnatomy(earMapConfig.defaultAnatomy);
+let regionGroups = cloneConfig(earMapConfig.regionGroups);
+
+function cloneConfig(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function normalizeEarMapConfigPayload(payload) {
+  return payload?.earMapConfig || payload?.config || payload?.data || payload;
+}
+
+function isValidEarMapConfig(config) {
+  return Boolean(
+    config &&
+    typeof config === 'object' &&
+    config.viewBox &&
+    Array.isArray(config.regionGroups) &&
+    config.anatomies &&
+    Object.values(config.anatomies).some((anatomy) => Array.isArray(anatomy?.regions) && anatomy.regions.length)
+  );
+}
+
+async function loadPublishedEarMapConfig() {
+  if (!EAR_MAP_CONFIG_URL) return;
+
+  try {
+    const response = await fetch(EAR_MAP_CONFIG_URL, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Ear map config request failed: ${response.status}`);
+
+    const payload = await response.json();
+    const config = normalizeEarMapConfigPayload(payload);
+    if (!isValidEarMapConfig(config)) throw new Error('Ear map config is missing required fields.');
+
+    applyEarMapConfig(config);
+  } catch (error) {
+    console.warn('Using fallback ear map config.', error);
+    applyEarMapConfig(DEFAULT_EAR_MAP_CONFIG);
+  }
+}
+
+function applyEarMapConfig(config) {
+  earMapConfig = cloneConfig(config);
+  regionGroups = cloneConfig(earMapConfig.regionGroups || FALLBACK_REGION_GROUPS);
+  syncActiveRegionsForCurrentSide();
+}
+
+function regionsForAnatomy(anatomy) {
+  const requested = earMapConfig?.anatomies?.[anatomy]?.regions;
+  const fallback = earMapConfig?.anatomies?.[earMapConfig.defaultAnatomy || 'detached']?.regions;
+  return cloneConfig((requested && requested.length ? requested : fallback) || FALLBACK_REGIONS);
+}
+
+function baseImageForAnatomy(anatomy) {
+  return earMapConfig?.anatomies?.[anatomy]?.baseImage || `assets/ear-${anatomy}.svg`;
+}
+
+function syncActiveRegionsForCurrentSide() {
+  const side = typeof currentSide === 'function' ? currentSide() : 'left';
+  const anatomy = typeof anatomyForSide === 'function' ? anatomyForSide(side) : (earMapConfig.defaultAnatomy || 'detached');
+  regions = regionsForAnatomy(anatomy);
+}
+
+function resetMapStateForCurrentRegions() {
+  if (!state) return;
+  syncActiveRegionsForCurrentSide();
+  state.existing = { left: emptyRegionCounts(), right: emptyRegionCounts() };
+  state.future = { left: emptyFutureCounts(), right: emptyFutureCounts() };
+  state.selectedRegion = { existing: null, future: null };
+  state.lastTouched = null;
+}
+
 
 const interestLevels = [
   { id: 'love', label: 'Love', short: 'Love', markerState: 'love' },
@@ -213,7 +308,10 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 const svgNS = 'http://www.w3.org/2000/svg';
 
-function init() {
+async function init() {
+  await loadPublishedEarMapConfig();
+  resetMapStateForCurrentRegions();
+
   setupContactStep();
   setupStartingPoint();
   setupStepOne();
@@ -569,6 +667,7 @@ function renderMapSteps() {
 }
 
 function renderMapWorkspace(mode) {
+  syncActiveRegionsForCurrentSide();
   const isBoth = state.earChoice === 'both';
   const prefix = mode === 'existing' ? 'existing' : 'future';
 
@@ -652,15 +751,15 @@ function hasIndustrialPlacement(side, mode, regionId) {
 function renderEarStage(container, mode) {
   const side = currentSide();
   const anatomy = anatomyForSide(side);
-  const imgSrc = `assets/ear-${anatomy}.svg`;
+  const imgSrc = baseImageForAnatomy(anatomy);
   const isRight = side === 'right';
 
   container.classList.toggle('is-right', isRight);
   container.innerHTML = `
     <div class="ear-canvas">
       <img class="ear-base" src="${imgSrc}" alt="Interactive ${anatomy} lobe ear map" />
-      <svg class="region-layer" viewBox="0 0 454.96 568.7" aria-label="Ear region map"></svg>
-      <svg class="marker-layer" viewBox="0 0 454.96 568.7" aria-hidden="true"></svg>
+      <svg class="region-layer" viewBox="${earMapConfig.viewBox}" aria-label="Ear region map"></svg>
+      <svg class="marker-layer" viewBox="${earMapConfig.viewBox}" aria-hidden="true"></svg>
     </div>
   `;
 
