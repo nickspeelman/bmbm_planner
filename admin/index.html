@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ear Map Admin</title>
+  <link rel="stylesheet" href="../css/app.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    .admin-shell {
+      width: min(100%, 980px);
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .admin-card {
+      background: rgba(255, 250, 246, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .admin-login-card {
+      width: min(100%, 500px);
+      margin: 0 auto;
+    }
+
+    .admin-login-card h1,
+    .admin-header h1 {
+      font-size: clamp(2rem, 8vw, 3rem);
+    }
+
+    .admin-status,
+    .admin-error {
+      margin: 12px 0 0;
+      line-height: 1.45;
+      font-size: 0.95rem;
+    }
+
+    .admin-status { color: var(--muted); }
+    .admin-error { color: #8c3f45; font-weight: 750; }
+
+    .admin-user-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 0 18px;
+      padding: 10px 12px;
+      border: 1px solid rgba(233, 217, 207, 0.95);
+      border-radius: 18px;
+      background: rgba(255, 245, 238, 0.68);
+    }
+
+    .admin-user-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .admin-user-card strong {
+      color: var(--accent-dark);
+    }
+
+    .admin-signout-btn {
+      flex: 0 0 auto;
+      min-height: 36px;
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--soft-2);
+      color: var(--accent-dark);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .admin-header {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    .admin-preview-card {
+      border: 1px solid rgba(233, 217, 207, 0.95);
+      background: rgba(255, 245, 238, 0.62);
+      border-radius: 24px;
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .admin-preview-card h2 {
+      margin: 0 0 10px;
+      color: var(--accent-dark);
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .admin-map-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .admin-stage {
+      display: grid;
+      place-items: center;
+      min-height: 420px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, #fff7f1, #f8e9e0);
+      border: 1px solid rgba(233, 217, 207, 0.9);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .admin-ear-canvas {
+      position: relative;
+      width: min(84vw, 330px);
+      aspect-ratio: 454.96 / 568.7;
+    }
+
+    .admin-ear-base,
+    .admin-region-layer,
+    .admin-marker-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .admin-ear-base {
+      display: block;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .admin-region {
+      fill: rgba(154, 107, 88, 0.08);
+      stroke: rgba(111, 70, 56, 0.36);
+      stroke-width: 2;
+      pointer-events: none;
+      transition: fill 140ms ease, stroke 140ms ease, opacity 140ms ease;
+    }
+
+    .admin-region.is-selected {
+      fill: rgba(154, 107, 88, 0.28);
+      stroke: rgba(111, 70, 56, 0.78);
+    }
+
+    .admin-marker-dot {
+      fill: var(--accent-dark);
+      stroke: #fffaf6;
+      stroke-width: 3.5;
+      pointer-events: none;
+    }
+
+    .admin-marker-ring {
+      fill: transparent;
+      stroke: var(--accent-dark);
+      stroke-width: 5;
+      pointer-events: none;
+    }
+
+    .admin-industrial-bar {
+      stroke: var(--accent-dark);
+      stroke-width: 5;
+      stroke-linecap: round;
+      pointer-events: none;
+    }
+
+    .admin-industrial-end {
+      fill: var(--accent-dark);
+      stroke: #fffaf6;
+      stroke-width: 3.5;
+      pointer-events: none;
+    }
+
+    .admin-region-list {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .admin-region-button {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid rgba(233, 217, 207, 0.95);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.62);
+      color: var(--text);
+      font-weight: 760;
+      text-align: left;
+      padding: 9px 11px;
+      cursor: pointer;
+    }
+
+    .admin-region-button.is-selected {
+      background: #fff2ea;
+      color: var(--accent-dark);
+      border-color: rgba(154, 107, 88, 0.62);
+    }
+
+    .admin-detail {
+      margin-top: 14px;
+      border: 1px solid rgba(233, 217, 207, 0.95);
+      border-radius: 18px;
+      background: rgba(255, 250, 246, 0.74);
+      padding: 12px;
+    }
+
+    .admin-detail h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+      color: var(--accent-dark);
+    }
+
+    .admin-detail p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.4;
+      font-size: 0.92rem;
+    }
+
+    .admin-detail dl {
+      margin: 10px 0 0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .admin-detail-row {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 8px;
+      font-size: 0.88rem;
+    }
+
+    .admin-detail dt {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .admin-detail dd {
+      margin: 0;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .admin-debug-panel {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px dashed rgba(154, 107, 88, 0.42);
+      background: rgba(255, 250, 246, 0.62);
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+        .admin-editor-top {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .admin-editor-controls {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .admin-control-group {
+      display: grid;
+      gap: 6px;
+    }
+
+    .admin-control-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      font-weight: 850;
+    }
+
+    .admin-segmented {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      padding: 6px;
+      background: #f0e0d6;
+      border-radius: 999px;
+    }
+
+    .admin-segmented button,
+    .admin-action-btn,
+    .admin-danger-btn {
+      min-height: 40px;
+      border: 0;
+      border-radius: 999px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .admin-segmented button {
+      background: transparent;
+      color: var(--accent-dark);
+    }
+
+    .admin-segmented button.is-selected {
+      background: #fffaf6;
+      box-shadow: 0 6px 16px rgba(83, 58, 46, 0.08);
+    }
+
+    .admin-action-btn {
+      background: var(--accent-dark);
+      color: #fffaf6;
+      padding: 9px 14px;
+    }
+
+    .admin-action-btn:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+
+    .admin-danger-btn {
+      background: #fff2ea;
+      color: #8c3f45;
+      border: 1px solid rgba(140, 63, 69, 0.22);
+      padding: 9px 14px;
+    }
+
+    .admin-editor-card {
+      grid-column: 1 / -1;
+    }
+
+    .admin-marker-layer {
+      pointer-events: none;
+    }
+
+    .admin-edit-point {
+      cursor: grab;
+      pointer-events: auto;
+    }
+
+    .admin-edit-point:active {
+      cursor: grabbing;
+    }
+
+    .admin-edit-point.is-selected {
+      stroke: #8c3f45;
+      stroke-width: 5;
+    }
+
+    .admin-marker-hit {
+      fill: transparent;
+      stroke: transparent;
+      stroke-width: 24;
+      pointer-events: stroke;
+      cursor: grab;
+    }
+
+    .admin-click-catcher {
+      fill: transparent;
+      pointer-events: all;
+      cursor: crosshair;
+    }
+
+    .admin-point-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .admin-point-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid rgba(233, 217, 207, 0.95);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.58);
+    }
+
+    .admin-point-row.is-selected {
+      background: #fff2ea;
+      border-color: rgba(154, 107, 88, 0.62);
+    }
+
+    .admin-point-row button {
+      min-height: 32px;
+      border: 0;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: var(--soft-2);
+      color: var(--accent-dark);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .admin-point-meta {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.3;
+    }
+
+    .admin-editor-help {
+      margin-top: 10px !important;
+      color: var(--accent-dark) !important;
+      font-weight: 700;
+    }
+
+    .admin-save-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 12px;
+      align-items: center;
+    }
+
+        .admin-edit-mode-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      padding: 6px;
+      background: #f0e0d6;
+      border-radius: 999px;
+    }
+
+    .admin-edit-mode-tabs button {
+      min-height: 40px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--accent-dark);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .admin-edit-mode-tabs button.is-selected {
+      background: #fffaf6;
+      box-shadow: 0 6px 16px rgba(83, 58, 46, 0.08);
+    }
+
+    .admin-boundary-point {
+      fill: #fffaf6;
+      stroke: #8c3f45;
+      stroke-width: 4;
+      cursor: grab;
+      pointer-events: auto;
+    }
+
+    .admin-boundary-point.is-selected {
+      fill: #8c3f45;
+      stroke: #fffaf6;
+      stroke-width: 4.5;
+    }
+
+    .admin-boundary-hit {
+      fill: transparent;
+      stroke: transparent;
+      stroke-width: 24;
+      pointer-events: stroke;
+      cursor: grab;
+    }
+
+    .admin-boundary-line {
+      fill: none;
+      stroke: rgba(140, 63, 69, 0.8);
+      stroke-width: 2.5;
+      stroke-dasharray: 6 5;
+      pointer-events: none;
+    }
+
+    .admin-region-layer.is-boundary-editing .admin-region:not(.is-selected) {
+      opacity: 0.22;
+    }
+
+    .admin-region-layer.is-boundary-editing .admin-region.is-selected {
+      fill: rgba(140, 63, 69, 0.18);
+      stroke: rgba(140, 63, 69, 0.88);
+      stroke-width: 2.5;
+    }
+
+    .admin-boundary-warning {
+      margin-top: 10px !important;
+      color: #8c3f45 !important;
+      font-weight: 760;
+    }
+
+    @media (min-width: 760px) {
+      .admin-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .admin-map-layout {
+        grid-template-columns: minmax(0, 1fr) 190px;
+      }
+
+      .admin-stage {
+        min-height: 440px;
+      }
+
+      .admin-ear-canvas {
+        width: min(100%, 330px);
+      }
+
+      .admin-editor-controls {
+        grid-template-columns: 1fr auto;
+        align-items: end;
+      }
+
+      .admin-save-row {
+        grid-template-columns: auto auto 1fr;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="admin-shell">
+    <section id="admin-login" class="admin-card admin-login-card">
+      <p class="eyebrow">Admin</p>
+      <h1>Ear Map Admin</h1>
+      <p class="subtext">Sign in with an approved Google account to view the ear map configuration.</p>
+
+      <div id="g_id_onload"
+        data-client_id="718129687466-un944jpq37rr0t89tltlhjo085ui9ofo.apps.googleusercontent.com"
+        data-callback="handleGoogleCredential"
+        data-auto_prompt="false">
+      </div>
+
+      <div class="g_id_signin"
+        data-type="standard"
+        data-size="large"
+        data-theme="outline"
+        data-text="signin_with"
+        data-shape="pill"
+        data-logo_alignment="left">
+      </div>
+
+      <p id="admin-login-status" class="admin-status"></p>
+      <p id="admin-login-error" class="admin-error is-hidden"></p>
+    </section>
+
+    <section id="admin-app" class="admin-card is-hidden">
+      <div id="admin-user-card" class="admin-user-card is-hidden">
+        <p>Signed in as <strong id="admin-user-email"></strong></p>
+        <button id="admin-signout-btn" class="admin-signout-btn" type="button">Sign out</button>
+      </div>
+
+      <div class="admin-header">
+        <p class="eyebrow">Admin preview</p>
+        <h1>Ear Map Config</h1>
+        <p id="admin-status" class="admin-status">Loading…</p>
+      </div>
+
+      <div id="admin-preview-root" class="admin-grid"></div>
+      <div id="admin-debug-panel" class="admin-debug-panel is-hidden"></div>
+    </section>
+  </main>
+
+  <script>
+    window.BMBM_GOOGLE_CLIENT_ID = "718129687466-un944jpq37rr0t89tltlhjo085ui9ofo.apps.googleusercontent.com";
+    window.BMBM_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyFnw6x4nnQt9TW9jvrOg0IUe2mFxq_MTKcIPo_lTkTaLUc3VmjJ98CLmNAw4ASI98r6Q/exec";
+  </script>
+  <script src="../js/admin-ear-map-preview.js"></script>
+</body>
+</html>

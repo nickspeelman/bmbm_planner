@@ -192,39 +192,166 @@ function normalizeEarMapConfigPayload(payload) {
   return payload?.earMapConfig || payload?.config || payload?.data || payload;
 }
 
+function validateEarMapConfig(config) {
+  const errors = [];
+
+  if (!config || typeof config !== 'object') {
+    return ['Config must be an object.'];
+  }
+
+  if (!config.schemaVersion) errors.push('Missing schemaVersion.');
+  if (!config.configId) errors.push('Missing configId.');
+  if (!config.version) errors.push('Missing version.');
+  if (!config.viewBox) errors.push('Missing viewBox.');
+
+  if (!Array.isArray(config.regionGroups)) {
+    errors.push('Missing regionGroups array.');
+  }
+
+  if (!config.anatomies || typeof config.anatomies !== 'object') {
+    errors.push('Missing anatomies object.');
+    return errors;
+  }
+
+  ['detached', 'attached'].forEach((anatomyKey) => {
+    const anatomy = config.anatomies[anatomyKey];
+
+    if (!anatomy) {
+      errors.push(`Missing anatomy: ${anatomyKey}.`);
+      return;
+    }
+
+    if (!anatomy.baseImage) {
+      errors.push(`${anatomyKey} anatomy is missing baseImage.`);
+    }
+
+    if (!Array.isArray(anatomy.regions)) {
+      errors.push(`${anatomyKey} anatomy is missing regions array.`);
+      return;
+    }
+
+    anatomy.regions.forEach((region, index) => {
+      const label = `${anatomyKey}.regions[${index}]`;
+
+      if (!region.id) errors.push(`${label} is missing id.`);
+      if (!region.label) errors.push(`${label} is missing label.`);
+      if (!region.type) errors.push(`${label} is missing type.`);
+      if (!region.path) errors.push(`${label} is missing path.`);
+
+      if (!['dot', 'ring', 'industrial'].includes(region.type)) {
+        errors.push(`${label} has invalid type: ${region.type}.`);
+      }
+
+      if (!Array.isArray(region.positions)) {
+        errors.push(`${label} is missing positions array.`);
+      }
+
+      if (
+        region.type === 'industrial' &&
+        Array.isArray(region.positions) &&
+        region.positions.length < 2
+      ) {
+        errors.push(`${label} is industrial but has fewer than 2 positions.`);
+      }
+    });
+  });
+
+  validateRegionGroups(config, errors);
+
+  return errors;
+}
+
 function isValidEarMapConfig(config) {
-  return Boolean(
-    config &&
-    typeof config === 'object' &&
-    config.viewBox &&
-    Array.isArray(config.regionGroups) &&
-    config.anatomies &&
-    Object.values(config.anatomies).some((anatomy) => Array.isArray(anatomy?.regions) && anatomy.regions.length)
-  );
+  return validateEarMapConfig(config).length === 0;
+}
+
+function validateRegionGroups(config, errors) {
+  if (!Array.isArray(config.regionGroups) || !config.anatomies) return;
+
+  const allRegionIds = new Set();
+
+  Object.values(config.anatomies).forEach((anatomy) => {
+    if (!Array.isArray(anatomy.regions)) return;
+
+    anatomy.regions.forEach((region) => {
+      if (region.id) allRegionIds.add(region.id);
+    });
+  });
+
+  config.regionGroups.forEach((group, groupIndex) => {
+    const label = `regionGroups[${groupIndex}]`;
+
+    if (!group.id) errors.push(`${label} is missing id.`);
+    if (!group.label) errors.push(`${label} is missing label.`);
+
+    if (!Array.isArray(group.regionIds)) {
+      errors.push(`${label} is missing regionIds array.`);
+      return;
+    }
+
+    group.regionIds.forEach((regionId) => {
+      if (!allRegionIds.has(regionId)) {
+        errors.push(`${label} references unknown region id: ${regionId}.`);
+      }
+    });
+  });
 }
 
 async function loadPublishedEarMapConfig() {
-  if (!EAR_MAP_CONFIG_URL) return;
+  if (!EAR_MAP_CONFIG_URL) {
+    console.warn('[ear-map] No EAR_MAP_CONFIG_URL set. Using fallback.');
+    applyEarMapConfig(DEFAULT_EAR_MAP_CONFIG, 'fallback:no-url');
+    return;
+  }
 
   try {
-    const response = await fetch(EAR_MAP_CONFIG_URL, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Ear map config request failed: ${response.status}`);
+    const url = new URL(EAR_MAP_CONFIG_URL);
+    url.searchParams.set('_ts', String(Date.now()));
+
+    console.log('[ear-map] Loading config from:', url.toString());
+
+    const response = await fetch(url.toString(), { cache: 'no-store' });
+
+    console.log('[ear-map] Config response status:', response.status);
+
+    if (!response.ok) {
+      throw new Error(`Ear map config request failed: ${response.status}`);
+    }
 
     const payload = await response.json();
-    const config = normalizeEarMapConfigPayload(payload);
-    if (!isValidEarMapConfig(config)) throw new Error('Ear map config is missing required fields.');
+    console.log('[ear-map] Raw config payload:', payload);
 
-    applyEarMapConfig(config);
+    const config = normalizeEarMapConfigPayload(payload);
+    const validationErrors = validateEarMapConfig(config);
+
+    if (validationErrors.length) {
+      throw new Error(`Ear map config is invalid: ${validationErrors.join(' | ')}`);
+    }
+
+    applyEarMapConfig(config, 'published-endpoint');
+
   } catch (error) {
-    console.warn('Using fallback ear map config.', error);
-    applyEarMapConfig(DEFAULT_EAR_MAP_CONFIG);
+    console.warn('[ear-map] Using fallback ear map config.', error);
+    window.__BMBM_EAR_MAP_LOAD_ERROR = error;
+    applyEarMapConfig(DEFAULT_EAR_MAP_CONFIG, 'fallback:error');
   }
 }
-
-function applyEarMapConfig(config) {
+function applyEarMapConfig(config, source = 'unknown') {
   earMapConfig = cloneConfig(config);
   regionGroups = cloneConfig(earMapConfig.regionGroups || FALLBACK_REGION_GROUPS);
   syncActiveRegionsForCurrentSide();
+
+  window.__BMBM_EAR_MAP_CONFIG = earMapConfig;
+  window.__BMBM_EAR_MAP_CONFIG_SOURCE = source;
+
+  console.log('[ear-map] Active config applied:', {
+    source,
+    configId: earMapConfig.configId,
+    version: earMapConfig.version,
+    status: earMapConfig.status,
+    publishedAt: earMapConfig.publishedAt,
+    detachedLobePath: earMapConfig.anatomies?.detached?.regions?.find((region) => region.id === 'lobe')?.path
+  });
 }
 
 function regionsForAnatomy(anatomy) {
