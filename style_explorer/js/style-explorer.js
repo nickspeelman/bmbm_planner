@@ -28,11 +28,11 @@ const COLOR_OPTIONS = [
   { id: 'black-dark-tones', label: 'Black / dark tones' },
   { id: 'colorful-playful', label: 'Colorful / playful' },
   { id: 'not-sure', label: 'Not sure' },
-  { id: 'other', label: 'Other / tell us more' }
+  { id: 'other', label: 'Other / add details' }
 ];
 
-const ROUTE_REQUIRED_COPY = 'You haven’t given Michele a lot of style detail yet, and that’s completely fine. That’s what this explorer is for. We’ll show you a few small sets of words, and you can tap anything that feels close or mark anything that feels like the wrong direction. By the end, Michele will have a clearer feel for the mood you’re drawn to.';
-const ROUTE_OPTIONAL_COPY = 'What you wrote already gives Michele a helpful starting point. You can skip ahead, or try the style explorer for a few extra words that may help narrow the mood, clarify the details, and make the consultation notes easier to work from.';
+const ROUTE_REQUIRED_COPY = 'You can skip ahead, but the style quiz may be especially helpful here. It gives Michele a few more words to work with when you’re not sure how to describe the look yet.';
+const ROUTE_OPTIONAL_COPY = 'What you wrote already gives Michele a helpful starting point. You can skip ahead, or try the style quiz for a few extra words that may help narrow the mood, clarify the details, and give Michele more to work from.';
 
 const state = {
   screen: 'intro',
@@ -87,6 +87,7 @@ const $ = (selector) => document.querySelector(selector);
 let vocabulary = loadVocabulary();
 
 function init() {
+  injectExitModalStyles();
   if (!vocabulary?.pools?.initialScreen?.length || !vocabulary?.termsById || !Object.keys(vocabulary.termsById).length) {
     $('#screen-root').innerHTML = '<p class="warning-note">No vocabulary loaded. Make sure js/vocabulary.js defines window.STYLE_VOCABULARY_PAYLOAD before js/style-explorer.js.</p>';
     return;
@@ -403,7 +404,10 @@ function render() {
 
   const renderers = {
     intro: renderIntro,
-    preStyle: renderPreStyle,
+    styleIdea: renderStyleIdea,
+    metals: renderMetals,
+    gems: renderGems,
+    colors: renderColors,
     routing: renderRouting,
     initialPositive: renderInitialPositive,
     badFit: renderBadFit,
@@ -418,7 +422,7 @@ function render() {
 }
 
 function renderProgress() {
-  const steps = ['intro', 'preStyle', 'routing', 'initialPositive', 'badFit', 'adaptive', 'midpoint', 'opposingPairs', 'summary'];
+  const steps = ['intro', 'styleIdea', 'metals', 'gems', 'colors', 'routing', 'initialPositive', 'badFit', 'adaptive', 'midpoint', 'opposingPairs', 'summary'];
   const activeIndex = Math.max(0, steps.indexOf(state.screen));
   $('#progress').innerHTML = steps.map((_, index) => `<span class="progress-dot ${index === activeIndex ? 'is-active' : ''}"></span>`).join('');
 }
@@ -430,9 +434,9 @@ function renderIntro() {
       <h1>Let’s find your style.</h1>
       <p class="subtext">This is just a low-pressure way to help Michele understand what you’re drawn to.</p>
       <div class="mini-note">
-        <p>You don’t need the perfect words. We’ll ask a few simple questions and use your answers as a starting point.</p>
+        <p>You don’t need the perfect words. A few simple questions can help turn your answers into a useful starting point for Michele.</p>
       </div>
-      <button class="primary-btn" type="button" data-go="preStyle">Continue</button>
+      <button class="primary-btn" type="button" data-go="styleIdea">Continue</button>
     </div>
   `;
 }
@@ -454,15 +458,80 @@ const STONE_OPTIONS = [
   { id: 'no-stone-preference', label: 'No preference' },
 ];
 
-function renderPreStyle() {
+function renderStyleIdea() {
   return `
     <div class="step-card is-active form-card">
       <p class="eyebrow">Starting point</p>
-      <h1>A little direction first.</h1>
-      <p class="subtext">These are just aesthetic notes, not final jewelry decisions. They help Michele understand the mood before you get into placement, anatomy, or specific jewelry.</p>
+      <h1>Do you already have a style or vibe in mind?</h1>
+      <p class="subtext">This can be loose. A few words, a mood, a story, an outfit, an event, or even “I’m not sure yet” is all useful.</p>
+
+      <div class="form-stack">
+        <label class="field-label" for="style-idea-text">Tell Michele what you’re imagining <span class="optional-mark">optional</span></label>
+        <textarea id="style-idea-text" class="soft-textarea" rows="5" data-field="styleIdeaText" placeholder="Examples: delicate and celestial, bold but still elegant, tiny and minimal, romantic but not too sweet, something special for my wedding…">${escapeHTML(state.preStyle.styleIdeaText)}</textarea>
+      </div>
+
+      <div class="button-row screen-actions">
+        <button class="secondary-btn" type="button" data-go="intro">Back</button>
+        <button class="primary-btn" type="button" data-go="metals">Continue</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderMetals() {
+  return `
+    <div class="step-card is-active form-card">
+      <p class="eyebrow">Metals</p>
+      <h1>Do you have a metal preference?</h1>
+      <p class="subtext">These are just preferences, not final jewelry decisions. Michele works with gold and titanium jewelry.</p>
 
       <div class="question-block">
-        <h2>Are there any colors or color families you’re drawn to?</h2>
+        <div class="soft-chip-grid" role="group" aria-label="Metal preference">
+          ${METAL_OPTIONS.map((option) => `
+            <button class="soft-chip ${state.preStyle.metalPreferences.includes(option.id) ? 'is-selected' : ''}" type="button" data-metal-id="${option.id}">${option.label}</button>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="button-row screen-actions">
+        <button class="secondary-btn" type="button" data-go="styleIdea">Back</button>
+        <button class="primary-btn" type="button" data-go="gems">Continue</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderGems() {
+  return `
+    <div class="step-card is-active form-card">
+      <p class="eyebrow">Gems</p>
+      <h1>What kind of stones or sparkle do you like?</h1>
+      <p class="subtext">Choose anything you’re drawn to, or skip this for now.</p>
+
+      <div class="question-block">
+        <div class="soft-chip-grid" role="group" aria-label="Stone and gem preference">
+          ${STONE_OPTIONS.map((option) => `
+            <button class="soft-chip ${state.preStyle.stonePreferences.includes(option.id) ? 'is-selected' : ''}" type="button" data-stone-id="${option.id}">${option.label}</button>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="button-row screen-actions">
+        <button class="secondary-btn" type="button" data-go="metals">Back</button>
+        <button class="primary-btn" type="button" data-go="colors">Continue</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderColors() {
+  return `
+    <div class="step-card is-active form-card">
+      <p class="eyebrow">Colors</p>
+      <h1>Are there any colors or color families you’re drawn to?</h1>
+      <p class="subtext">This helps Michele understand the mood before you get into placement, anatomy, or specific jewelry.</p>
+
+      <div class="question-block">
         <div class="soft-chip-grid" role="group" aria-label="Color direction">
           ${COLOR_OPTIONS.map((option) => `
             <button class="color-chip ${state.preStyle.colorDirections.includes(option.id) ? 'is-selected' : ''}" type="button" data-color-id="${option.id}">${option.label}</button>
@@ -471,37 +540,12 @@ function renderPreStyle() {
       </div>
 
       <div id="other-color-wrap" class="form-stack conditional-field ${state.preStyle.colorDirections.includes('other') ? '' : 'is-hidden'}">
-        <label class="field-label" for="other-color-details">Tell us a little more <span class="optional-mark">optional</span></label>
+        <label class="field-label" for="other-color-details">Add a little more detail <span class="optional-mark">optional</span></label>
         <textarea id="other-color-details" class="soft-textarea" rows="2" data-field="otherColorDetails" placeholder="Ivory and gold, deep red, forest green, soft pinks, etc.">${escapeHTML(state.preStyle.otherColorDetails)}</textarea>
       </div>
 
-      <div class="question-block">
-        <h2>Do you have a metal preference?</h2>
-        <p class="helper-text">Michele works with gold and titanium jewelry.</p>
-        <div class="soft-chip-grid" role="group" aria-label="Metal preference">
-          ${METAL_OPTIONS.map((option) => `
-            <button class="soft-chip ${state.preStyle.metalPreferences.includes(option.id) ? 'is-selected' : ''}" type="button" data-metal-id="${option.id}">${option.label}</button>
-          `).join('')}
-        </div>
-      </div>
-
-      <div class="question-block">
-        <h2>What kind of stones or sparkle do you like?</h2>
-        <p class="helper-text">Choose anything you’re drawn to, or skip this for now.</p>
-        <div class="soft-chip-grid" role="group" aria-label="Stone and gem preference">
-          ${STONE_OPTIONS.map((option) => `
-            <button class="soft-chip ${state.preStyle.stonePreferences.includes(option.id) ? 'is-selected' : ''}" type="button" data-stone-id="${option.id}">${option.label}</button>
-          `).join('')}
-        </div>
-      </div>
-
-      <div class="form-stack">
-        <label class="field-label" for="style-idea-text">Do you already have a style or vibe in mind? <span class="optional-mark">optional</span></label>
-        <textarea id="style-idea-text" class="soft-textarea" rows="4" data-field="styleIdeaText" placeholder="Examples: delicate and celestial, bold but still elegant, tiny and minimal, romantic but not too sweet…">${escapeHTML(state.preStyle.styleIdeaText)}</textarea>
-      </div>
-
       <div class="button-row screen-actions">
-        <button class="secondary-btn" type="button" data-go="intro">Back</button>
+        <button class="secondary-btn" type="button" data-go="gems">Back</button>
         <button class="primary-btn" type="button" data-route-style>Continue</button>
       </div>
     </div>
@@ -509,20 +553,25 @@ function renderPreStyle() {
 }
 
 function renderRouting() {
-  const isOptional = state.routing.hasMeaningfulStyleText;
+  const hasDetails = state.routing.hasMeaningfulStyleText;
   return `
     <div class="step-card is-active title-card">
-      <p class="eyebrow">${isOptional ? 'Good starting point' : 'That’s what this is for'}</p>
-      <h1>${isOptional ? 'You gave Michele a helpful start.' : 'Let’s find a few words together.'}</h1>
-      <div class="route-card"><p>${isOptional ? ROUTE_OPTIONAL_COPY : ROUTE_REQUIRED_COPY}</p></div>
-      ${isOptional ? `
-        <div class="button-row screen-actions">
-          <button class="secondary-btn" type="button" data-skip-summary>Skip to summary</button>
-          <button class="primary-btn" type="button" data-start-explorer>Try the style explorer</button>
-        </div>
-      ` : `
-        <button class="primary-btn" type="button" data-start-explorer>Start the style explorer</button>
-      `}
+      <p class="eyebrow">${hasDetails ? 'Good starting point' : 'Optional next step'}</p>
+      <h1>${hasDetails ? 'Want to add a little more direction?' : 'Want to try a quick style quiz?'}</h1>
+      <div class="route-card"><p>${hasDetails ? ROUTE_OPTIONAL_COPY : ROUTE_REQUIRED_COPY}</p></div>
+      <div class="button-row screen-actions">
+        <button class="secondary-btn" type="button" data-skip-summary>Skip to summary</button>
+        <button class="primary-btn" type="button" data-start-explorer>${hasDetails ? 'Try the style quiz' : 'Take the style quiz'}</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderQuizExitAction() {
+  return `
+    <div class="quiz-exit-zone" aria-label="Style quiz exit option">
+      <p class="mini-note">Need to move on? You can leave the quiz and keep the answers you’ve already given.</p>
+      <button class="secondary-btn quiz-exit-btn" type="button" data-exit-explorer>Exit style quiz</button>
     </div>
   `;
 }
@@ -532,7 +581,7 @@ function renderInitialPositive() {
     <div class="step-card is-active form-card">
       <p class="eyebrow">First impressions</p>
       <h1>Pick a few words that feel close.</h1>
-      <p class="subtext">Don’t think too hard. This first set is intentionally short — just enough to give us an initial direction.</p>
+      <p class="subtext">Don’t think too hard. This first set is intentionally short — just enough to find an initial direction.</p>
       <div class="style-word-grid">
         ${vocabulary.pools.initialScreen.map((term) => wordButton(term, state.selections.initialPositiveIds.includes(term.id), 'positive')).join('')}
       </div>
@@ -540,6 +589,7 @@ function renderInitialPositive() {
         <button class="secondary-btn" type="button" data-go="routing">Back</button>
         <button class="primary-btn" type="button" data-go="badFit">Continue</button>
       </div>
+      ${renderQuizExitAction()}
     </div>
   `;
 }
@@ -561,6 +611,7 @@ function renderBadFit() {
         <button class="secondary-btn" type="button" data-go="initialPositive">Back</button>
         <button class="primary-btn" type="button" data-begin-adaptive>Continue</button>
       </div>
+      ${renderQuizExitAction()}
     </div>
   `;
 }
@@ -577,7 +628,7 @@ function renderAdaptive() {
       <p class="eyebrow">Narrowing in</p>
       <p class="round-counter">Round ${state.adaptive.roundIndex + 1} of ${roundTotal}</p>
       <h1>Let’s narrow it in.</h1>
-      <p class="subtext">Tap any that feel right. Skip anything that doesn’t. These should start to get more specific as we learn what you like.</p>
+      <p class="subtext">Tap any that feel right. Skip anything that doesn’t. These should start to get more specific as your style direction comes into focus.</p>
       <div class="adaptive-round-card">
         ${terms.map((term) => wordButton(term, selected.has(term.id), 'adaptive', true)).join('')}
       </div>
@@ -585,6 +636,7 @@ function renderAdaptive() {
         <button class="secondary-btn" type="button" data-adaptive-skip>Skip these</button>
         <button class="primary-btn" type="button" data-next-adaptive>Continue</button>
       </div>
+      ${renderQuizExitAction()}
     </div>
   `;
 }
@@ -596,7 +648,7 @@ function renderMidpoint() {
   return `
     <div class="step-card is-active form-card">
       <p class="eyebrow">Vibe check</p>
-      <h1>These are the vibes we’re getting so far…</h1>
+      <h1>Here’s the style direction so far…</h1>
       <p class="subtext">Nothing is locked in. This is a steering moment, not a final summary.</p>
       <div class="mini-note">
         <p>Use <strong>More</strong> when you want to lean harder into that word, <strong>Good</strong> when it feels about right, and <strong>Less</strong> when it is close but too strong or not quite you.</p>
@@ -617,6 +669,7 @@ function renderMidpoint() {
         <button class="secondary-btn" type="button" data-go="adaptive">Back</button>
         <button class="primary-btn" type="button" data-after-midpoint>Continue</button>
       </div>
+      ${renderQuizExitAction()}
     </div>
   `;
 }
@@ -637,27 +690,250 @@ function renderOpposingPairs() {
         <button class="secondary-btn" type="button" data-go="adaptive">Back</button>
         <button class="primary-btn" type="button" data-finish>Submit</button>
       </div>
+      ${renderQuizExitAction()}
     </div>
   `;
 }
 
 function renderSummary() {
-  if (!state.handoff) state.handoff = buildHandoff();
-
   return `
     <div class="step-card is-active review-card">
-      <p class="eyebrow">Style summary</p>
-      <h1>Your style.</h1>
-      <p class="subtext">We’re turning your choices into a short style note. After you see it, you can tell us whether it feels right and add anything you want Michele to know.</p>
+      <p class="eyebrow">Style profile</p>
+      <h1>Your style profile.</h1>
+      <p class="subtext">Here’s a quick visual readout of your choices. Michele will get a fuller profile later, but this gives you a chance to tell her what feels right or off.</p>
 
-      ${renderGeneratedStyleSummary()}
+      ${renderClientStyleProfile()}
 
       <div class="button-row screen-actions">
-        <button class="secondary-btn" type="button" data-go="opposingPairs">Back</button>
+        <button class="secondary-btn" type="button" data-go="${summaryBackDestination()}">Back</button>
         <button class="primary-btn" type="button" data-reset>Start over</button>
       </div>
     </div>
   `;
+}
+
+function summaryBackDestination() {
+  return state.routing.explorerStatus === 'completed' ? 'opposingPairs' : 'routing';
+}
+
+function renderClientStyleProfile() {
+  const vector = currentStyleVector();
+  const preferenceTrayItems = buildPreferenceTrayItems();
+  const styleNotes = buildStrongestStyleNotes(vector);
+  const keywords = closestProfileKeywords(vector, 10);
+
+  return `
+    <section class="client-summary-card style-profile-card" aria-live="polite">
+      ${renderPreferenceTray(preferenceTrayItems)}
+      ${renderStrongestStyleNotes(styleNotes)}
+      ${state.routing.explorerStatus === 'completed' ? renderKeywordConstellation(keywords) : ''}
+      ${renderSummaryFeedback()}
+    </section>
+  `;
+}
+
+function buildPreferenceTrayItems() {
+  const items = [];
+
+  const styleIdeaText = state.preStyle.styleIdeaText.trim();
+
+  if (styleIdeaText) {
+    items.push({
+      label: 'Style idea',
+      values: [styleIdeaText],
+      isText: true
+    });
+  }
+
+  const colorLabels = state.preStyle.colorDirections
+    .filter((id) => id !== 'other')
+    .map((id) => COLOR_OPTIONS.find((item) => item.id === id)?.label || id);
+
+  if (colorLabels.length) {
+    items.push({
+      label: 'Colors',
+      values: colorLabels
+    });
+  }
+
+  const otherColorDetails = state.preStyle.otherColorDetails.trim();
+
+  if (otherColorDetails) {
+    items.push({
+      label: 'Color note',
+      values: [otherColorDetails],
+      isText: true
+    });
+  }
+
+  const metalLabels = state.preStyle.metalPreferences
+    .map((id) => METAL_OPTIONS.find((item) => item.id === id)?.label || id);
+
+  if (metalLabels.length) {
+    items.push({
+      label: 'Metals',
+      values: metalLabels
+    });
+  }
+
+  const stoneLabels = state.preStyle.stonePreferences
+    .map((id) => STONE_OPTIONS.find((item) => item.id === id)?.label || id);
+
+  if (stoneLabels.length) {
+    items.push({
+      label: 'Stones',
+      values: stoneLabels
+    });
+  }
+
+  return items;
+}
+
+
+function renderCollapsibleProfileSection({ title, className = '', body }) {
+  return `
+    <details class="profile-section profile-collapsible-section ${className}" open>
+      <summary class="profile-section-summary">
+        <span class="eyebrow summary-eyebrow">${escapeHTML(title)}</span>
+        <span class="profile-section-toggle" aria-hidden="true"></span>
+      </summary>
+      <div class="profile-section-body">
+        ${body}
+      </div>
+    </details>
+  `;
+}
+
+function renderPreferenceTray(items) {
+  if (!items.length) return '';
+
+  const body = `
+    <div class="preference-tray-grid">
+      ${items.map((item) => `
+        <div class="preference-tray-item ${item.isText ? 'is-text-note' : ''}">
+          <h3>${escapeHTML(item.label)}</h3>
+          <div class="preference-chip-row">
+            ${item.values.map((value) => `
+              <span class="profile-chip">${escapeHTML(value)}</span>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  return renderCollapsibleProfileSection({
+    title: 'Your starting points',
+    className: 'preference-tray',
+    body
+  });
+}
+
+function buildStrongestStyleNotes(vector) {
+  const strongestPoles = DIMENSIONS
+    .map((dimension) => {
+      const score = vector[dimension.id] || 0;
+
+      return {
+        id: dimension.id,
+        label: dimension.label,
+        score,
+        abs: Math.abs(score),
+        pole: score < 0 ? dimension.negativePole : dimension.positivePole
+      };
+    })
+    .filter((item) => item.abs >= 0.15)
+    .sort((a, b) => b.abs - a.abs)
+    .slice(0, 6);
+
+  return [
+    {
+      label: 'Primary',
+      poles: strongestPoles.slice(0, 2)
+    },
+    {
+      label: 'Supporting',
+      poles: strongestPoles.slice(2, 4)
+    },
+    {
+      label: 'Accent',
+      poles: strongestPoles.slice(4, 6)
+    }
+  ].filter((group) => group.poles.length);
+}
+
+function renderStrongestStyleNotes(groups) {
+  if (!groups.length) return '';
+
+  const body = `
+    <div class="style-note-list">
+      ${groups.map((group) => `
+        <div class="style-note-row">
+          <span class="style-note-label">${escapeHTML(group.label)}</span>
+          <span class="style-note-value">
+            ${group.poles.map((item) => escapeHTML(item.pole)).join(' • ')}
+          </span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  return renderCollapsibleProfileSection({
+    title: 'Your strongest style notes',
+    className: 'strongest-style-notes',
+    body
+  });
+}
+
+function closestProfileKeywords(vector, limit = 10) {
+  const selectedIds = new Set([
+    ...state.selections.initialPositiveIds,
+    ...state.selections.adaptiveSelectedIds
+  ]);
+
+  const seenTerms = new Set();
+
+  return vocabulary.pools.synopsis
+    .map((term) => ({
+      term,
+      score: cosineSimilarity(vector, term.scores),
+      wasSelected: selectedIds.has(term.id)
+    }))
+    .filter((item) => Number.isFinite(item.score))
+    .sort((a, b) => {
+      if (b.wasSelected !== a.wasSelected) {
+        return Number(b.wasSelected) - Number(a.wasSelected);
+      }
+
+      return b.score - a.score;
+    })
+    .filter((item) => {
+      const key = termKey(item.term);
+      if (seenTerms.has(key)) return false;
+      seenTerms.add(key);
+      return true;
+    })
+    .slice(0, limit);
+}
+
+function renderKeywordConstellation(items) {
+  if (!items.length) return '';
+
+  const body = `
+    <div class="constellation-cloud">
+      ${items.map((item, index) => `
+        <span class="constellation-word constellation-word-${index + 1} ${item.wasSelected ? 'was-selected' : 'was-inferred'}">
+          ${escapeHTML(item.term.term)}
+        </span>
+      `).join('')}
+    </div>
+  `;
+
+  return renderCollapsibleProfileSection({
+    title: 'Words in your orbit',
+    className: 'keyword-constellation',
+    body
+  });
 }
 
 function renderGeneratedStyleSummary() {
@@ -732,19 +1008,37 @@ function getClientFacingSummary(result) {
   return result?.clientStyleSummary || result?.clientSummary || result?.client_style_summary || '';
 }
 
+const SUMMARY_RATING_OPTIONS = [
+  { id: 'way-off', label: 'Way off' },
+  { id: 'pretty-good', label: 'Pretty good' },
+  { id: 'nailed-it', label: 'Nailed it' }
+];
+
 function renderSummaryFeedback() {
   return `
     <div class="summary-feedback">
-      <div class="mini-note">
-        <p>Michele will get a much more detailed style profile than what you see here. This is just a short summary so you can tell us whether the overall direction feels right.</p>
-      </div>
+      <p class="feedback-label">Does this profile feel right?</p>
 
-      <p class="feedback-label">Does this feel like you?</p>
-      <div class="rating-row" role="group" aria-label="Rate this style summary">
+  
+
+      <div class="rating-row star-rating-row" role="group" aria-label="Rate this style profile from 1 star, way off, to 5 stars, nailed it">
         ${[1, 2, 3, 4, 5].map((rating) => `
-          <button class="rating-button ${state.clientFeedback.rating === rating ? 'is-selected' : ''}" type="button" data-summary-rating="${rating}" aria-label="${rating} out of 5">${rating}</button>
+          <button
+            class="rating-button star-rating-button ${Number(state.clientFeedback.rating) >= rating ? 'is-selected' : ''}"
+            type="button"
+            data-summary-rating="${rating}"
+            aria-label="${rating} out of 5 stars"
+          >
+            ★
+          </button>
         `).join('')}
       </div>
+
+          <div class="rating-scale-labels" aria-hidden="true">
+        <span>Way off</span>
+        <span>Nailed it</span>
+      </div>
+
       <label class="field-label" for="summary-comment">Anything you’d change or add? <span class="optional-mark">optional</span></label>
       <textarea id="summary-comment" class="soft-textarea" rows="3" data-feedback-comment placeholder="Example: more delicate, less dark, more colorful, not quite bold enough…">${escapeHTML(state.clientFeedback.comment)}</textarea>
     </div>
@@ -886,22 +1180,24 @@ function bindScreenEvents() {
   const startExplorer = $('[data-start-explorer]');
   if (startExplorer) {
     startExplorer.addEventListener('click', () => {
-      state.routing.explorerStatus = 'completed';
+      state.routing.explorerStatus = 'in-progress';
       go('initialPositive');
     });
   }
 
   const skipSummary = $('[data-skip-summary]');
-  if (skipSummary) {
-    skipSummary.addEventListener('click', () => {
-      state.routing.explorerStatus = 'skipped';
-      state.handoff = buildHandoff();
-      go('summary');
-      requestHandoffSummary();
-    });
-  }
+    if (skipSummary) {
+      skipSummary.addEventListener('click', () => {
+        state.routing.explorerStatus = 'skipped';
+        go('summary');
+      });
+    }
 
-  document.querySelectorAll('[data-term-id]').forEach((button) => {
+  document.querySelectorAll('[data-exit-explorer]').forEach((button) => {
+    button.addEventListener('click', confirmExitExplorer);
+  });
+
+    document.querySelectorAll('[data-term-id]').forEach((button) => {
     button.addEventListener('click', () => {
       const id = button.dataset.termId;
       const mode = button.dataset.wordMode;
@@ -953,9 +1249,8 @@ function bindScreenEvents() {
   const finish = $('[data-finish]');
   if (finish) {
     finish.addEventListener('click', () => {
-      state.handoff = buildHandoff();
+      state.routing.explorerStatus = 'completed';
       go('summary');
-      requestHandoffSummary();
     });
   }
 
@@ -967,7 +1262,7 @@ function bindScreenEvents() {
 
   document.querySelectorAll('[data-summary-rating]').forEach((button) => {
     button.addEventListener('click', () => {
-      state.clientFeedback.rating = Number(button.dataset.summaryRating);
+      state.clientFeedback.rating = button.dataset.summaryRating;
       render();
     });
   });
@@ -997,6 +1292,112 @@ function bindScreenEvents() {
   if (resetButton) resetButton.addEventListener('click', () => window.location.reload());
 }
 
+function confirmExitExplorer() {
+  persistTextFields();
+  showExitExplorerModal();
+}
+
+function showExitExplorerModal() {
+  const existingModal = document.querySelector('[data-exit-modal]');
+  if (existingModal) existingModal.remove();
+
+  const previouslyFocused = document.activeElement;
+  const modal = document.createElement('div');
+  modal.className = 'exit-modal-backdrop';
+  modal.setAttribute('data-exit-modal', '');
+
+  modal.innerHTML = `
+    <div class="exit-modal-card" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" aria-describedby="exit-modal-description">
+      <p class="eyebrow">Leave style quiz?</p>
+      <h2 id="exit-modal-title">Do you want to exit the style quiz?</h2>
+      <p id="exit-modal-description" class="subtext">
+        Michele can still make a helpful style profile from what you’ve already shared, especially if you typed in any details at the beginning. But finishing the quiz gives her more clues, so the profile will usually be stronger if you keep going.
+      </p>
+      <div class="button-row exit-modal-actions">
+        <button class="secondary-btn" type="button" data-cancel-exit>Keep going</button>
+        <button class="primary-btn exit-confirm-btn" type="button" data-confirm-exit>Exit quiz</button>
+      </div>
+    </div>
+  `;
+
+  const closeModal = () => {
+    modal.remove();
+    if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+      previouslyFocused.focus();
+    }
+  };
+
+  modal.querySelector('[data-cancel-exit]')?.addEventListener('click', closeModal);
+  modal.querySelector('[data-confirm-exit]')?.addEventListener('click', () => {
+    modal.remove();
+    state.routing.explorerStatus = 'exited';
+    go('summary');
+  });
+
+  modal.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeModal();
+  });
+
+  document.body.appendChild(modal);
+  modal.querySelector('[data-cancel-exit]')?.focus();
+}
+
+function injectExitModalStyles() {
+  if (document.querySelector('#style-explorer-exit-modal-styles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'style-explorer-exit-modal-styles';
+  style.textContent = `
+    .exit-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(47, 39, 35, 0.42);
+      backdrop-filter: blur(4px);
+    }
+
+    .exit-modal-card {
+      width: min(100%, 440px);
+      padding: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: var(--radius-lg, 28px);
+      background: var(--card, #fffaf6);
+      color: var(--text, #2f2723);
+      box-shadow: var(--shadow, 0 18px 60px rgba(83, 58, 46, 0.15));
+      animation: cardIn 180ms ease both;
+    }
+
+    .exit-modal-card h2 {
+      margin: 0;
+      font-size: 1.35rem;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+    }
+
+    .exit-modal-card .subtext {
+      margin-bottom: 0;
+    }
+
+    .exit-modal-actions {
+      margin-top: 18px;
+    }
+
+    .exit-confirm-btn {
+      background: #8c3f45;
+    }
+
+    @media (max-width: 420px) {
+      .exit-modal-actions {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 function persistFeedbackFields() {
   const feedbackComment = $('[data-feedback-comment]');
   if (feedbackComment) state.clientFeedback.comment = feedbackComment.value;
@@ -1010,6 +1411,7 @@ function persistTextFields() {
 
 function go(screen) {
   state.screen = screen;
+  state.handoff = null;
   render();
 }
 
