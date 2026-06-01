@@ -4,8 +4,9 @@
 const HANDOFF_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyFnw6x4nnQt9TW9jvrOg0IUe2mFxq_MTKcIPo_lTkTaLUc3VmjJ98CLmNAw4ASI98r6Q/exec';
 
 const RAW_VOCABULARY = window.STYLE_VOCABULARY_RAW || [];
+const VOCABULARY_PAYLOAD = window.STYLE_VOCABULARY_PAYLOAD || null;
 
-const DIMENSIONS = [
+const DEFAULT_DIMENSIONS = [
   { id: 'delicate_bold', label: 'Delicate ↔ Bold', negativePole: 'Delicate', positivePole: 'Bold' },
   { id: 'classic_unexpected', label: 'Classic ↔ Unexpected', negativePole: 'Classic', positivePole: 'Unexpected' },
   { id: 'minimal_ornate', label: 'Minimal ↔ Ornate', negativePole: 'Minimal', positivePole: 'Ornate' },
@@ -18,6 +19,8 @@ const DIMENSIONS = [
   { id: 'grounded_ethereal', label: 'Grounded ↔ Ethereal', negativePole: 'Grounded', positivePole: 'Ethereal' }
 ];
 
+let DIMENSIONS = normalizeDimensions(VOCABULARY_PAYLOAD?.dimensions || DEFAULT_DIMENSIONS);
+
 const COLOR_OPTIONS = [
   { id: 'soft-neutrals', label: 'Soft neutrals' },
   { id: 'warm-tones', label: 'Warm tones' },
@@ -28,7 +31,7 @@ const COLOR_OPTIONS = [
   { id: 'other', label: 'Other / tell us more' }
 ];
 
-const ROUTE_REQUIRED_COPY = 'You haven’t given Michele a lot of style detail yet, and that’s completely fine. That’s what this little explorer is for. We’ll show you a few small sets of words, and you can tap anything that feels close or mark anything that feels like the wrong direction. By the end, Michele will have a clearer feel for the mood you’re drawn to.';
+const ROUTE_REQUIRED_COPY = 'You haven’t given Michele a lot of style detail yet, and that’s completely fine. That’s what this explorer is for. We’ll show you a few small sets of words, and you can tap anything that feels close or mark anything that feels like the wrong direction. By the end, Michele will have a clearer feel for the mood you’re drawn to.';
 const ROUTE_OPTIONAL_COPY = 'What you wrote already gives Michele a helpful starting point. You can skip ahead, or try the style explorer for a few extra words that may help narrow the mood, clarify the details, and make the consultation notes easier to work from.';
 
 const state = {
@@ -36,6 +39,8 @@ const state = {
   preStyle: {
     colorDirections: [],
     otherColorDetails: '',
+    metalPreferences: [],
+    stonePreferences: [],
     styleIdeaText: ''
   },
   routing: {
@@ -79,14 +84,96 @@ const state = {
 
 const $ = (selector) => document.querySelector(selector);
 
-let vocabulary = normalizeVocabulary(RAW_VOCABULARY);
+let vocabulary = loadVocabulary();
 
 function init() {
-  if (!Array.isArray(RAW_VOCABULARY) || !RAW_VOCABULARY.length) {
-    $('#screen-root').innerHTML = '<p class="warning-note">No vocabulary loaded. Make sure js/vocabulary.js is included before js/style-explorer.js.</p>';
+  if (!vocabulary?.pools?.initialScreen?.length || !vocabulary?.termsById || !Object.keys(vocabulary.termsById).length) {
+    $('#screen-root').innerHTML = '<p class="warning-note">No vocabulary loaded. Make sure js/vocabulary.js defines window.STYLE_VOCABULARY_PAYLOAD before js/style-explorer.js.</p>';
     return;
   }
   render();
+}
+
+function loadVocabulary() {
+  if (VOCABULARY_PAYLOAD?.pools && VOCABULARY_PAYLOAD?.termsById) {
+    return normalizeVocabularyPayload(VOCABULARY_PAYLOAD);
+  }
+
+  // Temporary fallback for the old territory-based prototype vocabulary.
+  // Once the scored JSON payload is in place, this branch should no longer run.
+  return normalizeVocabulary(RAW_VOCABULARY);
+}
+
+function normalizeDimensions(dimensions) {
+  return (dimensions || DEFAULT_DIMENSIONS).map((dimension) => ({
+    id: dimension.id,
+    label: dimension.label,
+    negativePole: dimension.negativePole,
+    positivePole: dimension.positivePole
+  }));
+}
+
+function normalizeVocabularyPayload(payload) {
+  DIMENSIONS = normalizeDimensions(payload.dimensions || DEFAULT_DIMENSIONS);
+
+  const rawTerms = Object.values(payload.termsById || {});
+  const terms = rawTerms.map(normalizePayloadTerm).filter(Boolean);
+  const termsById = Object.fromEntries(terms.map((term) => [term.id, term]));
+
+  const normalizePool = (pool) => (pool || [])
+    .map((term) => termsById[term.id] || normalizePayloadTerm(term))
+    .filter(Boolean);
+
+  const initialScreen = normalizePool(payload.pools.initialScreen);
+
+  return {
+    schemaVersion: payload.schemaVersion || 'unknown-payload-version',
+    sourceShape: 'scored-style-vocabulary-payload',
+    sourceFile: payload.sourceFile || '',
+    generatedAt: payload.generatedAt || '',
+    dimensions: DIMENSIONS,
+    badFitLogic: payload.badFitLogic || {},
+    pools: {
+      initialScreen,
+      badFitEligible: normalizePool(payload.pools.badFitEligible).length
+        ? normalizePool(payload.pools.badFitEligible)
+        : initialScreen,
+      adaptiveRound: normalizePool(payload.pools.adaptiveRound),
+      synopsis: normalizePool(payload.pools.synopsis),
+      opposingPairCandidates: payload.pools.opposingPairCandidates || {}
+    },
+    termsById
+  };
+}
+
+function normalizePayloadTerm(term) {
+  if (!term?.id || !term?.term) return null;
+
+  const scores = ensureScores(term.scores || {});
+
+  return {
+    ...term,
+    id: String(term.id),
+    term: String(term.term),
+    cleanTerm: term.cleanTerm || String(term.term).trim().toLowerCase(),
+    sourceTerritories: term.sourceTerritories || [],
+    scores,
+    metrics: term.metrics || termMetrics(scores),
+    topStyleSignal: normalizePayloadTopStyleSignal(term.topStyleSignal, scores)
+  };
+}
+
+function normalizePayloadTopStyleSignal(signal, scores) {
+  if (signal?.dimensionId && signal?.pole) return signal;
+  return topStyleSignal(scores);
+}
+
+function ensureScores(scores) {
+  const out = emptyVector();
+  DIMENSIONS.forEach((dimension) => {
+    out[dimension.id] = Number(scores[dimension.id] || 0);
+  });
+  return out;
 }
 
 function normalizeVocabulary(raw) {
@@ -341,14 +428,31 @@ function renderIntro() {
     <div class="step-card is-active title-card">
       <p class="eyebrow">Style explorer</p>
       <h1>Let’s find your style.</h1>
-      <p class="subtext">Don’t worry about finding perfect words. You're not commiting to anything here. This is just a way to give Michele a feel for what you’re drawn to, so your styling session can start in the right direction.</p>
+      <p class="subtext">This is just a low-pressure way to help Michele understand what you’re drawn to.</p>
       <div class="mini-note">
-        <p>You’ll start with a couple of broad questions. If you're not sure how to answer those, don't worry. We'll walk you through it and try to help find the words. There are no right answers. The goal is simply to give us a jumping-off point when you come in for your appointment.</p>
+        <p>You don’t need the perfect words. We’ll ask a few simple questions and use your answers as a starting point.</p>
       </div>
       <button class="primary-btn" type="button" data-go="preStyle">Continue</button>
     </div>
   `;
 }
+
+const METAL_OPTIONS = [
+  { id: 'yellow-gold', label: 'Yellow gold' },
+  { id: 'white-gold', label: 'White gold' },
+  { id: 'titanium', label: 'Titanium' },
+  { id: 'no-metal-preference', label: 'No preference' },
+];
+
+const STONE_OPTIONS = [
+  { id: 'diamonds', label: 'Diamonds' },
+  { id: 'cz', label: 'CZ / clear sparkle' },
+  { id: 'opal', label: 'Opal' },
+  { id: 'pearl', label: 'Pearl' },
+  { id: 'colorful-gems', label: 'Colorful gems' },
+  { id: 'no-stones', label: 'No stones' },
+  { id: 'no-stone-preference', label: 'No preference' },
+];
 
 function renderPreStyle() {
   return `
@@ -368,7 +472,27 @@ function renderPreStyle() {
 
       <div id="other-color-wrap" class="form-stack conditional-field ${state.preStyle.colorDirections.includes('other') ? '' : 'is-hidden'}">
         <label class="field-label" for="other-color-details">Tell us a little more <span class="optional-mark">optional</span></label>
-        <textarea id="other-color-details" class="soft-textarea" rows="2" data-field="otherColorDetails" placeholder="Ivory and gold, deep red, forest green, mixed metals, etc.">${escapeHTML(state.preStyle.otherColorDetails)}</textarea>
+        <textarea id="other-color-details" class="soft-textarea" rows="2" data-field="otherColorDetails" placeholder="Ivory and gold, deep red, forest green, soft pinks, etc.">${escapeHTML(state.preStyle.otherColorDetails)}</textarea>
+      </div>
+
+      <div class="question-block">
+        <h2>Do you have a metal preference?</h2>
+        <p class="helper-text">Michele works with gold and titanium jewelry.</p>
+        <div class="soft-chip-grid" role="group" aria-label="Metal preference">
+          ${METAL_OPTIONS.map((option) => `
+            <button class="soft-chip ${state.preStyle.metalPreferences.includes(option.id) ? 'is-selected' : ''}" type="button" data-metal-id="${option.id}">${option.label}</button>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="question-block">
+        <h2>What kind of stones or sparkle do you like?</h2>
+        <p class="helper-text">Choose anything you’re drawn to, or skip this for now.</p>
+        <div class="soft-chip-grid" role="group" aria-label="Stone and gem preference">
+          ${STONE_OPTIONS.map((option) => `
+            <button class="soft-chip ${state.preStyle.stonePreferences.includes(option.id) ? 'is-selected' : ''}" type="button" data-stone-id="${option.id}">${option.label}</button>
+          `).join('')}
+        </div>
       </div>
 
       <div class="form-stack">
@@ -421,8 +545,10 @@ function renderInitialPositive() {
 }
 
 function renderBadFit() {
-  const positive = new Set(state.selections.initialPositiveIds);
-  const terms = vocabulary.pools.badFitEligible.filter((term) => !positive.has(term.id));
+  const seen = initialScreenTermKeys();
+  const terms = vocabulary.pools.badFitEligible
+    .filter((term) => !seen.has(termKey(term)))
+    .slice(0, 20);
   return `
     <div class="step-card is-active form-card">
       <p class="eyebrow">Wrong direction</p>
@@ -566,8 +692,8 @@ function renderGeneratedStyleSummary() {
     if (!clientSummary) {
       return `
         <section class="client-summary-card error-card" aria-live="polite">
-          <h2>We got the style note back, but not the client-facing version.</h2>
-          <p>The backend response did not include <strong>clientStyleSummary</strong>. Try again, or check the Gemini response shape.</p>
+          <h2>That didn’t come through quite right.</h2>
+          <p>Your answers are still saved on this page. Try again and we’ll rebuild your style note.</p>
           <button class="primary-btn" type="button" data-retry-handoff>Try again</button>
         </section>
       `;
@@ -609,6 +735,10 @@ function getClientFacingSummary(result) {
 function renderSummaryFeedback() {
   return `
     <div class="summary-feedback">
+      <div class="mini-note">
+        <p>Michele will get a much more detailed style profile than what you see here. This is just a short summary so you can tell us whether the overall direction feels right.</p>
+      </div>
+
       <p class="feedback-label">Does this feel like you?</p>
       <div class="rating-row" role="group" aria-label="Rate this style summary">
         ${[1, 2, 3, 4, 5].map((rating) => `
@@ -712,6 +842,28 @@ function bindScreenEvents() {
   document.querySelectorAll('[data-color-id]').forEach((button) => {
     button.addEventListener('click', () => {
       toggleArrayValue(state.preStyle.colorDirections, button.dataset.colorId);
+      render();
+    });
+  });
+
+    document.querySelectorAll('[data-metal-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      togglePreferenceWithExclusiveOption(
+        state.preStyle.metalPreferences,
+        button.dataset.metalId,
+        ['no-metal-preference']
+      );
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-stone-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      togglePreferenceWithExclusiveOption(
+        state.preStyle.stonePreferences,
+        button.dataset.stoneId,
+        ['no-stones', 'no-stone-preference']
+      );
       render();
     });
   });
@@ -884,48 +1036,30 @@ function advanceAdaptive() {
 
 function chooseAdaptiveTerms() {
   const vector = currentStyleVector();
-  const shown = new Set([
-    ...state.selections.initialPositiveIds,
-    ...state.selections.badFitIds,
-    ...state.selections.adaptiveShownIds,
-    ...state.selections.adaptiveSelectedIds
-  ]);
+  const seen = alreadySeenTermKeys();
 
   const scored = vocabulary.pools.adaptiveRound
-    .filter((term) => !shown.has(term.id))
+  .filter((term) => !seen.has(termKey(term)))
     .map((term, index) => ({
       term,
       index,
       signal: term.topStyleSignal?.dimensionId || 'unknown',
-      territory: term.sourceTerritories?.[0] || 'Other',
       score: cosineSimilarity(vector, term.scores) + varietyBoost(term, index)
     }))
     .sort((a, b) => b.score - a.score);
 
   const chosen = [];
   const usedSignals = new Set();
-  const usedTerritories = new Set();
 
-  // First pass: stay fairly close to the working vector, but force variety.
-  scored.slice(0, 36).forEach((item) => {
+  // First pass: stay close to the working vector, but avoid repeating the same strongest dimension.
+  scored.slice(0, 40).forEach((item) => {
     if (chosen.length >= 5) return;
-    if (usedSignals.has(item.signal)) return;
-    if (usedTerritories.has(item.territory)) return;
-    chosen.push(item);
-    usedSignals.add(item.signal);
-    usedTerritories.add(item.territory);
-  });
-
-  // Second pass: allow same territory, but avoid repeating the same dimension signal.
-  scored.forEach((item) => {
-    if (chosen.length >= 5) return;
-    if (chosen.some((selected) => selected.term.id === item.term.id)) return;
     if (usedSignals.has(item.signal)) return;
     chosen.push(item);
     usedSignals.add(item.signal);
   });
 
-  // Final fallback: fill any remaining slots.
+  // Second pass: fill with the strongest remaining terms.
   scored.forEach((item) => {
     if (chosen.length >= 5) return;
     if (chosen.some((selected) => selected.term.id === item.term.id)) return;
@@ -936,19 +1070,24 @@ function chooseAdaptiveTerms() {
 }
 
 function varietyBoost(term, index) {
-  const previouslySelectedTerms = state.selections.adaptiveSelectedIds
+  const previouslySelectedTerms = [
+    ...state.selections.initialPositiveIds,
+    ...state.selections.adaptiveSelectedIds
+  ]
     .map((id) => vocabulary.termsById[id])
     .filter(Boolean);
-
-  const sameTerritoryPenalty = term.sourceTerritories.some((territory) =>
-    previouslySelectedTerms.some((selected) => selected.sourceTerritories.includes(territory))
-  ) ? -0.08 : 0.05;
 
   const sameSignalPenalty = previouslySelectedTerms.some((selected) =>
     selected.topStyleSignal?.dimensionId === term.topStyleSignal?.dimensionId
   ) ? -0.08 : 0.04;
 
-  return sameTerritoryPenalty + sameSignalPenalty + ((index % 11) * 0.002);
+  const closestSimilarity = previouslySelectedTerms.length
+    ? Math.max(...previouslySelectedTerms.map((selected) => cosineSimilarity(term.scores, selected.scores)))
+    : 0;
+
+  const nearDuplicatePenalty = closestSimilarity >= 0.94 ? -0.18 : closestSimilarity >= 0.88 ? -0.08 : 0.04;
+
+  return sameSignalPenalty + nearDuplicatePenalty + ((index % 11) * 0.002);
 }
 
 function currentStyleVector() {
@@ -999,24 +1138,17 @@ function normalizeVector(vector) {
 
 function buildMidpointDescriptors() {
   const vector = currentStyleVector();
-  const selected = [...state.selections.initialPositiveIds, ...state.selections.adaptiveSelectedIds]
-    .map((id) => vocabulary.termsById[id])
-    .filter(Boolean);
-
-  const selectedCandidates = selected
-    .sort((a, b) => b.metrics.vectorStrength - a.metrics.vectorStrength)
-    .slice(0, 3);
+  const seen = alreadySeenTermKeys();
 
   const nearbySynopsis = vocabulary.pools.synopsis
-    .filter((term) => !selected.some((item) => item.id === term.id))
+    .filter((term) => !seen.has(termKey(term)))
     .map((term) => ({ term, score: cosineSimilarity(vector, term.scores) }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 5)
+    .slice(0, 8)
     .map((item) => item.term);
 
-  return unique([...selectedCandidates, ...nearbySynopsis].map((term) => term.id))
+  return nearbySynopsis
     .slice(0, 4)
-    .map((id) => vocabulary.termsById[id])
     .filter(Boolean);
 }
 
@@ -1034,6 +1166,13 @@ function choosePairDimensions() {
 function buildHandoff() {
   const finalVector = currentStyleVector();
   const selectedColorDirections = state.preStyle.colorDirections.map((id) => COLOR_OPTIONS.find((item) => item.id === id)?.label || id);
+  const selectedMetalPreferences = state.preStyle.metalPreferences.map((id) =>
+    METAL_OPTIONS.find((item) => item.id === id)?.label || id
+  );
+
+  const selectedStonePreferences = state.preStyle.stonePreferences.map((id) =>
+    STONE_OPTIONS.find((item) => item.id === id)?.label || id
+  );
   const strongestDimensions = DIMENSIONS
     .map((dimension) => ({
       id: dimension.id,
@@ -1066,6 +1205,8 @@ function buildHandoff() {
   return {
     selectedColorDirections,
     otherColorDetails: state.preStyle.otherColorDetails.trim(),
+    selectedMetalPreferences,
+    selectedStonePreferences,
     freeTextStyleIdea: state.preStyle.styleIdeaText.trim(),
     styleExplorerStatus: state.routing.explorerStatus,
     positiveInitialWords: idsToTerms(state.selections.initialPositiveIds),
@@ -1084,6 +1225,8 @@ function buildHandoff() {
     ambiguousOrMixedDimensions,
     synopsisFriendlySelectedTerms,
     vocabularySource: vocabulary.sourceShape,
+    vocabularySchemaVersion: vocabulary.schemaVersion,
+    vocabularySourceFile: vocabulary.sourceFile || '',
     generatedAt: new Date().toISOString()
   };
 }
@@ -1114,8 +1257,8 @@ function termForHandoff(term) {
   return {
     id: term.id,
     term: term.term,
-    sourceTerritories: term.sourceTerritories,
-    topStyleSignal: term.topStyleSignal
+    topStyleSignal: term.topStyleSignal,
+    metrics: term.metrics
   };
 }
 
@@ -1147,10 +1290,55 @@ function cosineSimilarity(a, b) {
   return dot / (Math.sqrt(magA) * Math.sqrt(magB));
 }
 
+function togglePreferenceWithExclusiveOption(list, value, exclusiveValues = []) {
+  const isExclusive = exclusiveValues.includes(value);
+
+  if (isExclusive) {
+    list.splice(0, list.length, value);
+    return;
+  }
+
+  exclusiveValues.forEach((exclusiveValue) => {
+    const exclusiveIndex = list.indexOf(exclusiveValue);
+    if (exclusiveIndex >= 0) list.splice(exclusiveIndex, 1);
+  });
+
+  toggleArrayValue(list, value);
+}
+
 function toggleArrayValue(list, value) {
   const index = list.indexOf(value);
   if (index >= 0) list.splice(index, 1);
   else list.push(value);
+}
+
+function termKey(term) {
+  return String(term?.cleanTerm || term?.term || term?.id || '')
+    .trim()
+    .toLowerCase();
+}
+
+function idsToTermKeys(ids) {
+  return new Set(
+    ids
+      .map((id) => vocabulary.termsById[id])
+      .filter(Boolean)
+      .map(termKey)
+  );
+}
+
+function initialScreenTermKeys() {
+  return new Set(vocabulary.pools.initialScreen.map(termKey));
+}
+
+function alreadySeenTermKeys() {
+  return new Set([
+    ...initialScreenTermKeys(),
+    ...idsToTermKeys(state.selections.badFitIds),
+    ...idsToTermKeys(state.selections.adaptiveShownIds),
+    ...idsToTermKeys(state.selections.adaptiveSelectedIds),
+    ...state.midpoint.descriptors.map(termKey)
+  ]);
 }
 
 function unique(values) {
