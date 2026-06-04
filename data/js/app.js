@@ -419,7 +419,6 @@ const state = {
     timing: []
   },
   styleExplorer: null,
-  styleProgressStep: 10,
   earChoice: null,
   bothSimilar: null,
   lobeEditSide: 'left',
@@ -536,37 +535,9 @@ function setupStyleExplorerBridge() {
       updatedAt: message.updatedAt || new Date().toISOString()
     };
 
-    if (state.step === 22) renderReview();
+    if (state.step === 11) renderReview();
   });
 }
-
-function receiveStyleExplorerUpdate(message = {}) {
-  state.styleExplorer = {
-    handoff: message.handoff || null,
-    backend: message.backend || null,
-    clientFeedback: message.clientFeedback || null,
-    updatedAt: message.updatedAt || new Date().toISOString()
-  };
-
-  renderReview();
-}
-
-function setStyleExplorerProgress(progressStep) {
-  const numericProgress = Number(progressStep);
-  if (Number.isFinite(numericProgress)) {
-    state.styleProgressStep = Math.max(10, Math.min(21, numericProgress));
-    renderProgress();
-  }
-}
-
-window.BMBMPlanner = {
-  goToStep(step) {
-    state.step = Number(step);
-    renderAll();
-  },
-  receiveStyleExplorerUpdate,
-  setStyleExplorerProgress
-};
 
 function toggleArrayValue(list, value) {
   const index = list.indexOf(value);
@@ -720,49 +691,9 @@ function renderSteps() {
 }
 
 function renderProgress() {
-  const progress = $('.progress');
-  if (!progress) return;
-
-  if (!progress.classList.contains('progress-phase')) {
-    progress.classList.add('progress-phase');
-  }
-
-  if (!$('.progress-phase-label') || !$('.progress-phase-fill')) {
-    progress.innerHTML = `
-      <span class="progress-phase-label"></span>
-      <span class="progress-phase-track" aria-hidden="true">
-        <span class="progress-phase-fill"></span>
-      </span>
-    `;
-  }
-
-  const activeProgress = state.step === 10
-    ? state.styleProgressStep
-    : state.step;
-
-  let phaseLabel = 'Getting started';
-  let phasePercent = 14;
-
-  if (activeProgress >= 3 && activeProgress <= 4) {
-    phaseLabel = 'Lifestyle';
-    phasePercent = 34;
-  } else if (activeProgress >= 5 && activeProgress <= 9) {
-    phaseLabel = 'Placement';
-    phasePercent = 56;
-  } else if (activeProgress >= 10 && activeProgress <= 21) {
-    phaseLabel = 'Style';
-    phasePercent = 78;
-  } else if (activeProgress >= 22) {
-    phaseLabel = 'Review';
-    phasePercent = 100;
-  }
-
-  const label = $('.progress-phase-label');
-  const fill = $('.progress-phase-fill');
-
-  if (label) label.textContent = phaseLabel;
-  if (fill) fill.style.width = `${phasePercent}%`;
-  progress.setAttribute('aria-label', `Current section: ${phaseLabel}`);
+  $$('.progress-dot').forEach((dot) => {
+    dot.classList.toggle('is-active', Number(dot.dataset.progress) === state.step);
+  });
 }
 
 
@@ -1525,19 +1456,19 @@ function renderReview() {
       ['Idea clarity', labelFor('ideaClarity', state.startingPoint.ideaClarity)],
       state.startingPoint.initialIdeas ? ['Already in mind', state.startingPoint.initialIdeas] : null
     ]))}
+    ${reviewSection('Planning', reviewList([
+      ['Planning', labelFor('earChoice', state.earChoice)],
+      ...plannedSides().map((side) => [`${capitalize(side)} lobe`, labelFor('lobe', state.lobe[side])])
+    ]))}
+    ${reviewEarSection('Existing piercings', 'existing')}
+    ${reviewEarSection('Future interests', 'future')}
+    ${renderStyleExplorerReview()}
     ${reviewSection('Lifestyle', reviewList([
       ['Sleep side', labelFor('sleepSide', state.lifestyle.sleepSide)],
       ['Daily routine', listLabels(state.lifestyle.routine, routineLabels)],
       ['Healing history', labelFor('healingHistory', state.lifestyle.healingHistory)],
       ['Timing', listLabels(state.lifestyle.timing, timingLabels)]
     ]))}
-    ${reviewSection('Placement', reviewList([
-      ['Placement', labelFor('earChoice', state.earChoice)],
-      ...plannedSides().map((side) => [`${capitalize(side)} lobe`, labelFor('lobe', state.lobe[side])])
-    ]))}
-    ${reviewEarSection('Existing piercings', 'existing')}
-    ${reviewEarSection('Future interests', 'future')}
-    ${renderStyleExplorerReview()}
   `;
 }
 
@@ -1610,16 +1541,11 @@ function renderStyleExplorerReview() {
   const feedback = state.styleExplorer?.clientFeedback;
 
   if (!styleData) {
-    return reviewSection('Style', '<p class="review-empty">No style details received yet.</p>');
+    return reviewSection('Style', '<p class="review-empty">No style quiz details received yet.</p>');
   }
 
   const strongest = (styleData.strongestDimensions || [])
-    .map((item) => {
-      const value = typeof item.absScore === 'number'
-        ? item.absScore
-        : (typeof item.score === 'number' ? Math.abs(item.score) : null);
-      return `${item.pole}${value !== null ? ` (${value.toFixed(2)})` : ''}`;
-    })
+    .map((item) => `${item.pole}${typeof item.score === 'number' ? ` (${item.score.toFixed(2)})` : ''}`)
     .join(', ');
 
   const selectedWords = [
@@ -1640,7 +1566,7 @@ function renderStyleExplorerReview() {
     selectedWords ? ['Selected words', selectedWords] : null,
     feedback?.rating ? ['Client rating', `${feedback.rating} / 5 stars`] : null,
     feedback?.comment ? ['Client style note', feedback.comment] : null,
-    ['Style Quiz Status', styleData.styleExplorerStatus || 'started']
+    ['Explorer status', styleData.styleExplorerStatus || 'started']
   ]));
 }
 

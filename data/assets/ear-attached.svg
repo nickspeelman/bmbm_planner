@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="454.96" height="568.7" viewBox="0 0 454.96 568.7" role="img" aria-label="Ear map with attached lobe" data-lobe="attached">
+  <!-- Source-mapped anatomy: normalized from the uploaded rendered Stack Bar SVG source; styling changed for this v0 prototype. -->
+  <g id="attached-earlobe" transform="translate(-4098.955 -440.896)">
+    <path id="Path_208" data-name="Path 208" d="M4351.063,586.535c10.045-37.231,33.4-71.357,66.406-91.3s77.285-19.4,112.531-3.757c27.127,12.043,46.919,29.937,60.532,56.311s19.915,56.018,22.239,85.607q4.852,61.775-9.463,117.334c-31.224,121.512-141.022,206.175-266.479,207.161q-1.254.01-2.518.015" transform="translate(-89.934 -14.938)" fill="none" stroke="#3a2a24" stroke-miterlimit="10" stroke-width="3.4"/>
+    <path id="Path_209" data-name="Path 209" d="M4486.2,740.5c-11.729.706-22.928-6.456-29.634-16.106s-9.551-21.46-11.048-33.115c-3.5-27.212-.142-55.676,12.226-80.165s34.2-44.624,60.527-52.358,56.829-1.991,76.838,16.778c18.946,17.772,26.791,44.329,30.83,69.99,6.211,39.466,5.159,80.594-7.594,118.455s-37.861,72.242-72.507,92.136" transform="translate(-131.931 -43.761)" fill="none" stroke="#3a2a24" stroke-miterlimit="10" stroke-width="3.4"/>
+    <path id="Path_210" data-name="Path 210" d="M4445.893,705.947a137.6,137.6,0,0,0,61.3-32.216" transform="translate(-132.571 -88.97)" fill="none" stroke="#3a2a24" stroke-miterlimit="10" stroke-width="3.4"/>
+    <path id="Path_211" data-name="Path 211" d="M4420.958,771.266c29.592-8.431,62.882-15.608,89.861-.812a61.616,61.616,0,0,1-.391,108.264c-13.932,7.51-30.269,9.425-44.487,16.376a69.111,69.111,0,0,0-27.871,24.976c-5.419,8.564-8.891,18.237-14.252,26.837s-13.342,16.427-23.364,17.924-21.547-5.895-21.367-16.027c.167-9.361,9.023-15.745,15.862-22.141a69.287,69.287,0,0,0-10.487-109.283" transform="translate(-107.042 -122.663)" fill="none" stroke="#3a2a24" stroke-miterlimit="10" stroke-width="3.4"/>
+    <path id="Path_212" data-name="Path 212" d="M4423.833,884.844a108.547,108.547,0,0,1,81.474,29.115" transform="translate(-124.141 -169.537)" fill="none" stroke="#3a2a24" stroke-miterlimit="10" stroke-width="3.4"/>
+    <rect id="Rectangle_183" data-name="Rectangle 183" width="454.96" height="568.7" transform="translate(4098.955 440.896)" fill="none"/>
+  </g>
+</svg>

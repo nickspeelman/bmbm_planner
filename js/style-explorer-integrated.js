@@ -1,3 +1,4 @@
+(() => {
 // js/style-explorer.js
 // Standalone client-side prototype. Vocabulary stays local; final handoff can be sent to Apps Script/Gemini.
 
@@ -87,12 +88,9 @@ const $ = (selector) => document.querySelector(selector);
 let vocabulary = loadVocabulary();
 
 function init() {
-  if (new URLSearchParams(window.location.search).get('embedded') === '1') {
-    document.body.classList.add('is-embedded');
-  }
   injectExitModalStyles();
   if (!vocabulary?.pools?.initialScreen?.length || !vocabulary?.termsById || !Object.keys(vocabulary.termsById).length) {
-    $('#screen-root').innerHTML = '<p class="warning-note">No vocabulary loaded. Make sure js/vocabulary.js defines window.STYLE_VOCABULARY_PAYLOAD before js/style-explorer.js.</p>';
+    $('#integrated-style-explorer').innerHTML = '<p class="warning-note">No vocabulary loaded. Make sure js/vocabulary.js defines window.STYLE_VOCABULARY_PAYLOAD before js/style-explorer.js.</p>';
     return;
   }
   render();
@@ -402,25 +400,39 @@ function takeDiverseTerms(terms, limit) {
 
 
 function notifyParentStyleUpdate() {
-  if (!window.parent || window.parent === window) return;
+  const message = {
+    type: 'BMBM_STYLE_EXPLORER_UPDATE',
+    handoff: state.handoff || buildHandoff(),
+    backend: state.backend,
+    clientFeedback: state.clientFeedback,
+    updatedAt: new Date().toISOString()
+  };
 
-  try {
-    window.parent.postMessage({
-      type: 'BMBM_STYLE_EXPLORER_UPDATE',
-      handoff: state.handoff || buildHandoff(),
-      backend: state.backend,
-      clientFeedback: state.clientFeedback,
-      updatedAt: new Date().toISOString()
-    }, '*');
-  } catch (error) {
-    console.warn('[style-explorer] Could not notify parent planner.', error);
+  if (window.BMBMPlanner?.receiveStyleExplorerUpdate) {
+    window.BMBMPlanner.receiveStyleExplorerUpdate(message);
   }
 }
 
+function notifyParentProgressUpdate() {
+  if (window.BMBMPlanner?.setStyleExplorerProgress) {
+    window.BMBMPlanner.setStyleExplorerProgress(globalProgressStep());
+  }
+}
+
+function globalProgressStep() {
+  const steps = styleScreenOrder();
+  const activeIndex = Math.max(0, steps.indexOf(state.screen));
+  return 10 + activeIndex;
+}
+
+function styleScreenOrder() {
+  return ['intro', 'styleIdea', 'metals', 'gems', 'colors', 'routing', 'initialPositive', 'badFit', 'adaptive', 'midpoint', 'opposingPairs', 'summary'];
+}
+
 function render() {
-  renderProgress();
+  notifyParentProgressUpdate();
   state.copied = false;
-  const root = $('#screen-root');
+  const root = $('#integrated-style-explorer');
 
   const renderers = {
     intro: renderIntro,
@@ -447,21 +459,22 @@ function render() {
 }
 
 function renderProgress() {
-  const steps = ['intro', 'styleIdea', 'metals', 'gems', 'colors', 'routing', 'initialPositive', 'badFit', 'adaptive', 'midpoint', 'opposingPairs', 'summary'];
-  const activeIndex = Math.max(0, steps.indexOf(state.screen));
-  $('#progress').innerHTML = steps.map((_, index) => `<span class="progress-dot ${index === activeIndex ? 'is-active' : ''}"></span>`).join('');
+  notifyParentProgressUpdate();
 }
 
 function renderIntro() {
   return `
-    <div class="step-card is-active title-card">
+    <div class="style-screen-card is-active title-card">
       <p class="eyebrow">Style explorer</p>
       <h1>Let’s find your style.</h1>
       <p class="subtext">This is just a low-pressure way to help Michele understand what you’re drawn to.</p>
       <div class="mini-note">
         <p>You don’t need the perfect words. A few simple questions can help turn your answers into a useful starting point for Michele.</p>
       </div>
-      <button class="primary-btn" type="button" data-go="styleIdea">Continue</button>
+      <div class="button-row screen-actions">
+        <button class="secondary-btn" type="button" data-main-step="9">Back</button>
+        <button class="primary-btn" type="button" data-go="styleIdea">Continue</button>
+      </div>
     </div>
   `;
 }
@@ -485,7 +498,7 @@ const STONE_OPTIONS = [
 
 function renderStyleIdea() {
   return `
-    <div class="step-card is-active form-card">
+    <div class="style-screen-card is-active form-card">
       <p class="eyebrow">Starting point</p>
       <h1>Do you already have a style or vibe in mind?</h1>
       <p class="subtext">This can be loose. A few words, a mood, a story, an outfit, an event, or even “I’m not sure yet” is all useful.</p>
@@ -505,7 +518,7 @@ function renderStyleIdea() {
 
 function renderMetals() {
   return `
-    <div class="step-card is-active form-card">
+    <div class="style-screen-card is-active form-card">
       <p class="eyebrow">Metals</p>
       <h1>Do you have a metal preference?</h1>
       <p class="subtext">These are just preferences, not final jewelry decisions. Michele works with gold and titanium jewelry.</p>
@@ -528,7 +541,7 @@ function renderMetals() {
 
 function renderGems() {
   return `
-    <div class="step-card is-active form-card">
+    <div class="style-screen-card is-active form-card">
       <p class="eyebrow">Gems</p>
       <h1>What kind of stones or sparkle do you like?</h1>
       <p class="subtext">Choose anything you’re drawn to, or skip this for now.</p>
@@ -551,7 +564,7 @@ function renderGems() {
 
 function renderColors() {
   return `
-    <div class="step-card is-active form-card">
+    <div class="style-screen-card is-active form-card">
       <p class="eyebrow">Colors</p>
       <h1>Are there any colors or color families you’re drawn to?</h1>
       <p class="subtext">This helps Michele understand the mood before you get into placement, anatomy, or specific jewelry.</p>
@@ -580,7 +593,7 @@ function renderColors() {
 function renderRouting() {
   const hasDetails = state.routing.hasMeaningfulStyleText;
   return `
-    <div class="step-card is-active title-card">
+    <div class="style-screen-card is-active title-card">
       <p class="eyebrow">${hasDetails ? 'Good starting point' : 'Optional next step'}</p>
       <h1>${hasDetails ? 'Want to add a little more direction?' : 'Want to try a quick style quiz?'}</h1>
       <div class="route-card"><p>${hasDetails ? ROUTE_OPTIONAL_COPY : ROUTE_REQUIRED_COPY}</p></div>
@@ -603,7 +616,7 @@ function renderQuizExitAction() {
 
 function renderInitialPositive() {
   return `
-    <div class="step-card is-active form-card">
+    <div class="style-screen-card is-active form-card">
       <p class="eyebrow">First impressions</p>
       <h1>Pick a few words that feel close.</h1>
       <p class="subtext">Don’t think too hard. This first set is intentionally short — just enough to find an initial direction.</p>
@@ -625,7 +638,7 @@ function renderBadFit() {
     .filter((term) => !seen.has(termKey(term)))
     .slice(0, 20);
   return `
-    <div class="step-card is-active form-card">
+    <div class="style-screen-card is-active form-card">
       <p class="eyebrow">Wrong direction</p>
       <h1>Anything here feel like the wrong direction?</h1>
       <p class="subtext">This doesn’t mean there’s anything wrong with the style — it just helps Michele understand what’s not quite you.</p>
@@ -649,7 +662,7 @@ function renderAdaptive() {
   const terms = state.adaptive.currentRoundIds.map((id) => vocabulary.termsById[id]).filter(Boolean);
   const selected = new Set(state.selections.adaptiveSelectedIds);
   return `
-    <div class="step-card is-active form-card">
+    <div class="style-screen-card is-active form-card">
       <p class="eyebrow">Narrowing in</p>
       <p class="round-counter">Round ${state.adaptive.roundIndex + 1} of ${roundTotal}</p>
       <h1>Let’s narrow it in.</h1>
@@ -671,7 +684,7 @@ function renderMidpoint() {
     state.midpoint.descriptors = buildMidpointDescriptors();
   }
   return `
-    <div class="step-card is-active form-card">
+    <div class="style-screen-card is-active form-card">
       <p class="eyebrow">Vibe check</p>
       <h1>Here’s the style direction so far…</h1>
       <p class="subtext">Nothing is locked in. This is a steering moment, not a final summary.</p>
@@ -704,7 +717,7 @@ function renderOpposingPairs() {
     state.opposingPairs.shownDimensionIds = choosePairDimensions();
   }
   return `
-    <div class="step-card is-active form-card">
+    <div class="style-screen-card is-active form-card">
       <p class="eyebrow">Final direction</p>
       <h1>A few last either/or choices.</h1>
       <p class="subtext">Choose what feels closer. You can leave something balanced if neither side feels quite right.</p>
@@ -722,7 +735,7 @@ function renderOpposingPairs() {
 
 function renderSummary() {
   return `
-    <div class="step-card is-active review-card">
+    <div class="style-screen-card is-active review-card">
       <p class="eyebrow">Style</p>
       <h1>Style.</h1>
       <p class="subtext">Here’s a quick visual readout of your choices. Michele will get a fuller profile later, but this gives you a chance to tell her what feels right or off.</p>
@@ -731,7 +744,7 @@ function renderSummary() {
 
       <div class="button-row screen-actions">
         <button class="secondary-btn" type="button" data-go="${summaryBackDestination()}">Back</button>
-        <button class="primary-btn" type="button" data-reset>Start over</button>
+        <button class="primary-btn" type="button" data-review-full-plan>Review My Full Plan</button>
       </div>
     </div>
   `;
@@ -1158,6 +1171,26 @@ function bindScreenEvents() {
   document.querySelectorAll('[data-go]').forEach((button) => {
     button.addEventListener('click', () => go(button.dataset.go));
   });
+
+  document.querySelectorAll('[data-main-step]').forEach((button) => {
+    button.addEventListener('click', () => {
+      persistTextFields();
+      if (!state.handoff) state.handoff = buildHandoff();
+      notifyParentStyleUpdate();
+      window.BMBMPlanner?.goToStep(Number(button.dataset.mainStep));
+    });
+  });
+
+  const reviewFullPlan = $('[data-review-full-plan]');
+  if (reviewFullPlan) {
+    reviewFullPlan.addEventListener('click', () => {
+      persistTextFields();
+      persistFeedbackFields();
+      if (!state.handoff) state.handoff = buildHandoff();
+      notifyParentStyleUpdate();
+      window.BMBMPlanner?.goToStep(22);
+    });
+  }
 
   document.querySelectorAll('[data-color-id]').forEach((button) => {
     button.addEventListener('click', () => {
@@ -1806,3 +1839,5 @@ function escapeHTML(value) {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+})();

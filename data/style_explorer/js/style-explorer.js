@@ -723,8 +723,8 @@ function renderOpposingPairs() {
 function renderSummary() {
   return `
     <div class="step-card is-active review-card">
-      <p class="eyebrow">Style</p>
-      <h1>Style.</h1>
+      <p class="eyebrow">Style profile</p>
+      <h1>Your style profile.</h1>
       <p class="subtext">Here’s a quick visual readout of your choices. Michele will get a fuller profile later, but this gives you a chance to tell her what feels right or off.</p>
 
       ${renderClientStyleProfile()}
@@ -968,7 +968,7 @@ function renderGeneratedStyleSummary() {
         <div class="thinking-row">
           <span class="thinking-dot" aria-hidden="true"></span>
           <div>
-            <h2>Building your style…</h2>
+            <h2>Building your style note…</h2>
             <p>Taking your word choices and shaping them into a short style summary.</p>
           </div>
         </div>
@@ -979,8 +979,8 @@ function renderGeneratedStyleSummary() {
   if (state.backend.status === 'error') {
     return `
       <section class="client-summary-card error-card" aria-live="polite">
-        <h2>We couldn’t build your style yet.</h2>
-        <p>${escapeHTML(state.backend.error || 'Something went wrong while building your style.')}</p>
+        <h2>We couldn’t build the style note yet.</h2>
+        <p>${escapeHTML(state.backend.error || 'Something went wrong while building your style note.')}</p>
         <button class="primary-btn" type="button" data-retry-handoff>Try again</button>
       </section>
     `;
@@ -994,7 +994,7 @@ function renderGeneratedStyleSummary() {
       return `
         <section class="client-summary-card error-card" aria-live="polite">
           <h2>That didn’t come through quite right.</h2>
-          <p>Your answers are still saved on this page. Try again and we’ll rebuild your style.</p>
+          <p>Your answers are still saved on this page. Try again and we’ll rebuild your style note.</p>
           <button class="primary-btn" type="button" data-retry-handoff>Try again</button>
         </section>
       `;
@@ -1002,7 +1002,7 @@ function renderGeneratedStyleSummary() {
 
     return `
       <section class="client-summary-card" aria-live="polite">
-        <p class="eyebrow summary-eyebrow">Style</p>
+        <p class="eyebrow summary-eyebrow">Your style</p>
         <h2>${escapeHTML(clientSummary)}</h2>
         ${renderSummaryFeedback()}
       </section>
@@ -1011,8 +1011,8 @@ function renderGeneratedStyleSummary() {
 
   return `
     <section class="client-summary-card" aria-live="polite">
-      <h2>Ready to build your style.</h2>
-      <p>Tap below to submit your answers and build your style.</p>
+      <h2>Ready to build your style note.</h2>
+      <p>Tap below to submit your answers and build your style note.</p>
       <button class="primary-btn" type="button" data-send-handoff>Submit</button>
     </section>
   `;
@@ -1139,7 +1139,7 @@ async function requestHandoffSummary() {
     state.backend.result = result;
   } catch (error) {
     state.backend.status = 'error';
-    state.backend.error = error?.message || 'The style could not be generated.';
+    state.backend.error = error?.message || 'The style note could not be generated.';
   }
 
   render();
@@ -1608,7 +1608,6 @@ function buildHandoff() {
       id: dimension.id,
       label: dimension.label,
       score: finalVector[dimension.id] || 0,
-      absScore: Math.abs(finalVector[dimension.id] || 0),
       pole: (finalVector[dimension.id] || 0) < 0 ? dimension.negativePole : dimension.positivePole
     }))
     .filter((item) => Math.abs(item.score) >= 0.35)
@@ -1667,11 +1666,11 @@ function readableSummary(handoff) {
     <dl class="review-list">
       ${reviewRow('Colors', handoff.selectedColorDirections.join(', ') || 'None selected')}
       ${reviewRow('Style idea', handoff.freeTextStyleIdea || 'Not provided')}
-      ${reviewRow('Style Quiz Status', handoff.styleExplorerStatus)}
+      ${reviewRow('Explorer status', handoff.styleExplorerStatus)}
       ${reviewRow('Positive words', handoff.positiveInitialWords.map((item) => item.term).join(', ') || 'None')}
       ${reviewRow('Wrong direction', handoff.badFitWords.map((item) => item.term).join(', ') || 'None')}
       ${reviewRow('Adaptive picks', handoff.adaptiveWordsSelected.map((item) => item.term).join(', ') || 'None')}
-      ${reviewRow('Strongest dimensions', handoff.strongestDimensions.map((item) => item.pole).join(', ') || 'None yet')}
+      ${reviewRow('Strongest dimensions', handoff.strongestDimensions.map((item) => `${item.pole} (${item.score})`).join(', ') || 'None yet')}
     </dl>
   `;
 }

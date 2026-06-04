@@ -56,38 +56,10 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 .progress {
-  margin-bottom: 24px;
-}
-
-.progress-phase {
-  display: grid;
+  display: flex;
   gap: 8px;
-  justify-items: center;
-}
-
-.progress-phase-label {
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.progress-phase-track {
-  background: #eadfd7;
-  border-radius: 999px;
-  height: 7px;
-  overflow: hidden;
-  width: min(220px, 68vw);
-}
-
-.progress-phase-fill {
-  background: var(--accent);
-  border-radius: inherit;
-  display: block;
-  height: 100%;
-  transition: width 220ms ease;
-  width: 14%;
+  justify-content: center;
+  margin-bottom: 24px;
 }
 
 .progress-dot {
@@ -109,11 +81,6 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 .step-card.is-active { display: block; }
-
-.style-screen-card {
-  display: block;
-  animation: cardIn 220ms ease both;
-}
 
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -2050,11 +2017,22 @@ h2 {
   }
 }
 
-/* Integrated style explorer inside the main planner flow */
-.style-card .style-screen-card {
-  min-height: 0;
+/* Embedded style explorer inside the main planner flow */
+.embedded-style-explorer-wrap {
+  margin-top: 18px;
+  border: 1px solid var(--soft);
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.42);
 }
 
-.style-card .screen-actions {
+.embedded-style-explorer {
+  display: block;
+  width: 100%;
+  min-height: 980px;
+  border: 0;
+}
+
+.style-card .button-row {
   margin-top: 18px;
 }

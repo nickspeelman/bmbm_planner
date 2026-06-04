@@ -1,0 +1,1469 @@
+{
+  "initial_doors": {
+    "memory": [
+      {
+        "id": "door_memory_01",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What happened in the memory you want to explore?"
+      },
+      {
+        "id": "door_memory_02",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What is the main scene or moment you remember?"
+      },
+      {
+        "id": "door_memory_03",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". Who or what was part of that memory?"
+      },
+      {
+        "id": "door_memory_04",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". Where were you when this memory happened?"
+      },
+      {
+        "id": "door_memory_05",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What detail from the memory still stands out to you?"
+      },
+      {
+        "id": "door_memory_06",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What was happening around you in that memory?"
+      },
+      {
+        "id": "door_memory_07",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What part of the memory would help someone picture it?"
+      },
+      {
+        "id": "door_memory_08",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What object, place, or person helps anchor the memory?"
+      },
+      {
+        "id": "door_memory_09",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What would someone need to know to understand what this memory is?"
+      },
+      {
+        "id": "door_memory_10",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What part of this memory feels most connected to why you chose it?"
+      },
+      {
+        "id": "door_memory_11",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What did you see, hear, or notice in that moment?"
+      },
+      {
+        "id": "door_memory_12",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What makes this memory different from other memories?"
+      },
+      {
+        "id": "door_memory_13",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What part of this memory would you want reflected in the final idea?"
+      },
+      {
+        "id": "door_memory_14",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What is the simplest way to describe what this memory is about?"
+      },
+      {
+        "id": "door_memory_15",
+        "door": "memory",
+        "prompt": "You chose \"a memory\". What should this memory bring back to mind when you see it later?"
+      }
+    ],
+    "person": [
+      {
+        "id": "door_person_01",
+        "door": "person",
+        "prompt": "You chose \"a person\". Who came to mind, and how are they connected to this idea?"
+      },
+      {
+        "id": "door_person_02",
+        "door": "person",
+        "prompt": "You chose \"a person\". What is something specific that reminds you of them?"
+      },
+      {
+        "id": "door_person_03",
+        "door": "person",
+        "prompt": "You chose \"a person\". What part of this person or connection do you want to point toward?"
+      },
+      {
+        "id": "door_person_04",
+        "door": "person",
+        "prompt": "You chose \"a person\". What detail would help someone understand why they came to mind?"
+      },
+      {
+        "id": "door_person_05",
+        "door": "person",
+        "prompt": "You chose \"a person\". What object, place, or memory do you connect with them?"
+      },
+      {
+        "id": "door_person_06",
+        "door": "person",
+        "prompt": "You chose \"a person\". What would you want the final idea to quietly remind you about them?"
+      },
+      {
+        "id": "door_person_07",
+        "door": "person",
+        "prompt": "You chose \"a person\". What quality of theirs feels most connected to this choice?"
+      },
+      {
+        "id": "door_person_08",
+        "door": "person",
+        "prompt": "You chose \"a person\". What shared moment or familiar detail fits this person?"
+      },
+      {
+        "id": "door_person_09",
+        "door": "person",
+        "prompt": "You chose \"a person\". What should this person’s presence feel like in the final idea?"
+      },
+      {
+        "id": "door_person_10",
+        "door": "person",
+        "prompt": "You chose \"a person\". What would make this connection feel personal without needing to explain everything?"
+      },
+      {
+        "id": "door_person_11",
+        "door": "person",
+        "prompt": "You chose \"a person\". What part of your connection with them feels important to include?"
+      },
+      {
+        "id": "door_person_12",
+        "door": "person",
+        "prompt": "You chose \"a person\". What simple detail could stand in for this person or connection?"
+      },
+      {
+        "id": "door_person_13",
+        "door": "person",
+        "prompt": "You chose \"a person\". What would someone close to you recognize about this choice?"
+      },
+      {
+        "id": "door_person_14",
+        "door": "person",
+        "prompt": "You chose \"a person\". What do you associate with them right away?"
+      },
+      {
+        "id": "door_person_15",
+        "door": "person",
+        "prompt": "You chose \"a person\". What should this connection bring to mind when you see it later?"
+      }
+    ],
+    "place": [
+      {
+        "id": "door_place_01",
+        "door": "place",
+        "prompt": "You chose \"a place\". What place are you thinking about?"
+      },
+      {
+        "id": "door_place_02",
+        "door": "place",
+        "prompt": "You chose \"a place\". What would someone see if they were standing there with you?"
+      },
+      {
+        "id": "door_place_03",
+        "door": "place",
+        "prompt": "You chose \"a place\". What specific detail makes this place recognizable to you?"
+      },
+      {
+        "id": "door_place_04",
+        "door": "place",
+        "prompt": "You chose \"a place\". What connects this place to the idea you want to explore?"
+      },
+      {
+        "id": "door_place_05",
+        "door": "place",
+        "prompt": "You chose \"a place\". What colors, textures, or objects belong to this place?"
+      },
+      {
+        "id": "door_place_06",
+        "door": "place",
+        "prompt": "You chose \"a place\". What were you doing or noticing in this place?"
+      },
+      {
+        "id": "door_place_07",
+        "door": "place",
+        "prompt": "You chose \"a place\". What small part of this place stands out most clearly?"
+      },
+      {
+        "id": "door_place_08",
+        "door": "place",
+        "prompt": "You chose \"a place\". What should this place feel like when translated into a final idea?"
+      },
+      {
+        "id": "door_place_09",
+        "door": "place",
+        "prompt": "You chose \"a place\". What do you want to remember or keep from this place?"
+      },
+      {
+        "id": "door_place_10",
+        "door": "place",
+        "prompt": "You chose \"a place\". What makes this place different from other places?"
+      },
+      {
+        "id": "door_place_11",
+        "door": "place",
+        "prompt": "You chose \"a place\". What image from this place comes to mind first?"
+      },
+      {
+        "id": "door_place_12",
+        "door": "place",
+        "prompt": "You chose \"a place\". What would make this place recognizable without showing it directly?"
+      },
+      {
+        "id": "door_place_13",
+        "door": "place",
+        "prompt": "You chose \"a place\". What does being in this place bring up for you?"
+      },
+      {
+        "id": "door_place_14",
+        "door": "place",
+        "prompt": "You chose \"a place\". What part of this place matters most for this consultation?"
+      },
+      {
+        "id": "door_place_15",
+        "door": "place",
+        "prompt": "You chose \"a place\". What should this place bring back to mind later?"
+      }
+    ],
+    "feeling": [
+      {
+        "id": "door_feeling_01",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What feeling are you trying to point toward?"
+      },
+      {
+        "id": "door_feeling_02",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What situation, person, or place brings this feeling to mind?"
+      },
+      {
+        "id": "door_feeling_03",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What would someone need to know to understand this feeling?"
+      },
+      {
+        "id": "door_feeling_04",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What do you imagine this feeling looking like?"
+      },
+      {
+        "id": "door_feeling_05",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What kind of moment usually carries this feeling for you?"
+      },
+      {
+        "id": "door_feeling_06",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What detail helps make this feeling more specific?"
+      },
+      {
+        "id": "door_feeling_07",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What kind of reminder would help bring this feeling back?"
+      },
+      {
+        "id": "door_feeling_08",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What is this feeling connected to in your life?"
+      },
+      {
+        "id": "door_feeling_09",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What should this feeling add to the final idea?"
+      },
+      {
+        "id": "door_feeling_10",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What helps describe this feeling without making it too complicated?"
+      },
+      {
+        "id": "door_feeling_11",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What image, object, or place seems to match this feeling?"
+      },
+      {
+        "id": "door_feeling_12",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What would you want someone else to understand about this feeling?"
+      },
+      {
+        "id": "door_feeling_13",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What does this feeling usually come with?"
+      },
+      {
+        "id": "door_feeling_14",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What makes this feeling feel personal to you?"
+      },
+      {
+        "id": "door_feeling_15",
+        "door": "feeling",
+        "prompt": "You chose \"a feeling\". What should this feeling bring to mind when you see it later?"
+      }
+    ],
+    "image": [
+      {
+        "id": "door_image_01",
+        "door": "image",
+        "prompt": "You chose \"an image\". What image are you picturing?"
+      },
+      {
+        "id": "door_image_02",
+        "door": "image",
+        "prompt": "You chose \"an image\". What is happening or shown in that image?"
+      },
+      {
+        "id": "door_image_03",
+        "door": "image",
+        "prompt": "You chose \"an image\". What part of the image feels most important?"
+      },
+      {
+        "id": "door_image_04",
+        "door": "image",
+        "prompt": "You chose \"an image\". What color, shape, or detail stands out in it?"
+      },
+      {
+        "id": "door_image_05",
+        "door": "image",
+        "prompt": "You chose \"an image\". What does this image connect to for you?"
+      },
+      {
+        "id": "door_image_06",
+        "door": "image",
+        "prompt": "You chose \"an image\". What makes this image feel personal or meaningful?"
+      },
+      {
+        "id": "door_image_07",
+        "door": "image",
+        "prompt": "You chose \"an image\". What should stay recognizable from this image?"
+      },
+      {
+        "id": "door_image_08",
+        "door": "image",
+        "prompt": "You chose \"an image\". What would someone need to know to picture it?"
+      },
+      {
+        "id": "door_image_09",
+        "door": "image",
+        "prompt": "You chose \"an image\". What do you want this image to suggest?"
+      },
+      {
+        "id": "door_image_10",
+        "door": "image",
+        "prompt": "You chose \"an image\". What memory, place, or feeling does this image bring up?"
+      },
+      {
+        "id": "door_image_11",
+        "door": "image",
+        "prompt": "You chose \"an image\". What detail could point to the image without copying it exactly?"
+      },
+      {
+        "id": "door_image_12",
+        "door": "image",
+        "prompt": "You chose \"an image\". What kind of mood does this image carry?"
+      },
+      {
+        "id": "door_image_13",
+        "door": "image",
+        "prompt": "You chose \"an image\". What object or detail in the image matters most?"
+      },
+      {
+        "id": "door_image_14",
+        "door": "image",
+        "prompt": "You chose \"an image\". What should this image feel connected to?"
+      },
+      {
+        "id": "door_image_15",
+        "door": "image",
+        "prompt": "You chose \"an image\". What would you like the final idea to keep from this image?"
+      }
+    ],
+    "season_of_life": [
+      {
+        "id": "door_season_of_life_01",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What time in your life are you thinking about?"
+      },
+      {
+        "id": "door_season_of_life_02",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What makes this season stand out from other times?"
+      },
+      {
+        "id": "door_season_of_life_03",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What is happening in this season that feels important?"
+      },
+      {
+        "id": "door_season_of_life_04",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What are you noticing about this part of your life?"
+      },
+      {
+        "id": "door_season_of_life_05",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What detail would help someone understand this season?"
+      },
+      {
+        "id": "door_season_of_life_06",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What kind of change or pattern is part of this season?"
+      },
+      {
+        "id": "door_season_of_life_07",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What do you want to carry from this time?"
+      },
+      {
+        "id": "door_season_of_life_08",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What image, color, or object fits this season?"
+      },
+      {
+        "id": "door_season_of_life_09",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What feels worth marking about this point in time?"
+      },
+      {
+        "id": "door_season_of_life_10",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What would you like the final idea to mark about this season?"
+      },
+      {
+        "id": "door_season_of_life_11",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What choice, change, or feeling belongs to this season?"
+      },
+      {
+        "id": "door_season_of_life_12",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What would make this season recognizable to you later?"
+      },
+      {
+        "id": "door_season_of_life_13",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What has this season shown you about yourself or your life?"
+      },
+      {
+        "id": "door_season_of_life_14",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What kind of reminder would fit this time?"
+      },
+      {
+        "id": "door_season_of_life_15",
+        "door": "season_of_life",
+        "prompt": "You chose \"a season of life\". What should this season bring to mind when you see it later?"
+      }
+    ],
+    "value": [
+      {
+        "id": "door_value_01",
+        "door": "value",
+        "prompt": "You chose \"a value\". What value are you thinking about, and what does it mean to you?"
+      },
+      {
+        "id": "door_value_02",
+        "door": "value",
+        "prompt": "You chose \"a value\". How does this value show up in your life?"
+      },
+      {
+        "id": "door_value_03",
+        "door": "value",
+        "prompt": "You chose \"a value\". What would someone need to know to understand this value for you?"
+      },
+      {
+        "id": "door_value_04",
+        "door": "value",
+        "prompt": "You chose \"a value\". What person, place, or moment connects to this value?"
+      },
+      {
+        "id": "door_value_05",
+        "door": "value",
+        "prompt": "You chose \"a value\". What feeling comes with this value when you think about it?"
+      },
+      {
+        "id": "door_value_06",
+        "door": "value",
+        "prompt": "You chose \"a value\". What would you want this value to remind you of?"
+      },
+      {
+        "id": "door_value_07",
+        "door": "value",
+        "prompt": "You chose \"a value\". What kind of look or feeling would fit this value?"
+      },
+      {
+        "id": "door_value_08",
+        "door": "value",
+        "prompt": "You chose \"a value\". What makes this value feel personal to you?"
+      },
+      {
+        "id": "door_value_09",
+        "door": "value",
+        "prompt": "You chose \"a value\". What small detail could point toward this value?"
+      },
+      {
+        "id": "door_value_10",
+        "door": "value",
+        "prompt": "You chose \"a value\". What would someone close to you recognize about this value?"
+      },
+      {
+        "id": "door_value_11",
+        "door": "value",
+        "prompt": "You chose \"a value\". What does this value sit next to in your mind?"
+      },
+      {
+        "id": "door_value_12",
+        "door": "value",
+        "prompt": "You chose \"a value\". What does this value help you hold onto?"
+      },
+      {
+        "id": "door_value_13",
+        "door": "value",
+        "prompt": "You chose \"a value\". What would make this value feel grounded and real?"
+      },
+      {
+        "id": "door_value_14",
+        "door": "value",
+        "prompt": "You chose \"a value\". What should this value add to the final idea?"
+      },
+      {
+        "id": "door_value_15",
+        "door": "value",
+        "prompt": "You chose \"a value\". What should this value bring to mind when you see it later?"
+      }
+    ],
+    "dream_or_hope": [
+      {
+        "id": "door_dream_or_hope_01",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What dream or hope are you thinking about?"
+      },
+      {
+        "id": "door_dream_or_hope_02",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What part of this dream or hope matters most?"
+      },
+      {
+        "id": "door_dream_or_hope_03",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What would you like this hope to remind you of?"
+      },
+      {
+        "id": "door_dream_or_hope_04",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What image, color, or object connects to this hope?"
+      },
+      {
+        "id": "door_dream_or_hope_05",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What would it look like for this hope to stay close?"
+      },
+      {
+        "id": "door_dream_or_hope_06",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What makes this dream or hope feel real to you?"
+      },
+      {
+        "id": "door_dream_or_hope_07",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What small detail helps describe this hope?"
+      },
+      {
+        "id": "door_dream_or_hope_08",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What would make this feel encouraging without feeling too big?"
+      },
+      {
+        "id": "door_dream_or_hope_09",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What is this hope pointing toward?"
+      },
+      {
+        "id": "door_dream_or_hope_10",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What kind of reminder would fit this hope?"
+      },
+      {
+        "id": "door_dream_or_hope_11",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What change, person, or place connects to this hope?"
+      },
+      {
+        "id": "door_dream_or_hope_12",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What would you want to keep close about it?"
+      },
+      {
+        "id": "door_dream_or_hope_13",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What feeling does this hope carry for you?"
+      },
+      {
+        "id": "door_dream_or_hope_14",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What should this hope feel like when you see it?"
+      },
+      {
+        "id": "door_dream_or_hope_15",
+        "door": "dream_or_hope",
+        "prompt": "You chose \"a dream or hope\". What would make this idea feel personal and true?"
+      }
+    ],
+    "turning_point": [
+      {
+        "id": "door_turning_point_01",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What turning point are you thinking about?"
+      },
+      {
+        "id": "door_turning_point_02",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What changed around this moment?"
+      },
+      {
+        "id": "door_turning_point_03",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What made this moment feel different from what came before?"
+      },
+      {
+        "id": "door_turning_point_04",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What was the before-and-after feeling of this moment?"
+      },
+      {
+        "id": "door_turning_point_05",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What would you like this moment to mark?"
+      },
+      {
+        "id": "door_turning_point_06",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What detail helps explain this shift?"
+      },
+      {
+        "id": "door_turning_point_07",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What kind of start, ending, choice, or change was this?"
+      },
+      {
+        "id": "door_turning_point_08",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What image, object, or place fits this moment?"
+      },
+      {
+        "id": "door_turning_point_09",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What do you want to carry forward from it?"
+      },
+      {
+        "id": "door_turning_point_10",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What would make this change feel meaningful without being too literal?"
+      },
+      {
+        "id": "door_turning_point_11",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What kind of movement or shift happened here?"
+      },
+      {
+        "id": "door_turning_point_12",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What color, place, or object connects to this moment?"
+      },
+      {
+        "id": "door_turning_point_13",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What makes this moment worth noticing?"
+      },
+      {
+        "id": "door_turning_point_14",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What should this turning point remind you of later?"
+      },
+      {
+        "id": "door_turning_point_15",
+        "door": "turning_point",
+        "prompt": "You chose \"a turning point\". What kind of final look would feel right for this change?"
+      }
+    ],
+    "hard_to_name": [
+      {
+        "id": "door_hard_to_name_01",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What is one concrete detail you can give it?"
+      },
+      {
+        "id": "door_hard_to_name_02",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What situation, image, or feeling brought this to mind?"
+      },
+      {
+        "id": "door_hard_to_name_03",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What would you say if you only had to get close, not perfect?"
+      },
+      {
+        "id": "door_hard_to_name_04",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What comes to mind first when you try to describe it?"
+      },
+      {
+        "id": "door_hard_to_name_05",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What color, shape, texture, or object seems connected to it?"
+      },
+      {
+        "id": "door_hard_to_name_06",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What would help make the idea a little clearer?"
+      },
+      {
+        "id": "door_hard_to_name_07",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What does this hard-to-name thing remind you of?"
+      },
+      {
+        "id": "door_hard_to_name_08",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What person, place, time, or feeling seems connected to it?"
+      },
+      {
+        "id": "door_hard_to_name_09",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What should it feel like when reflected back to you?"
+      },
+      {
+        "id": "door_hard_to_name_10",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What is something this idea is not, even if the right word is hard to find?"
+      },
+      {
+        "id": "door_hard_to_name_11",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What kind of mood does it have?"
+      },
+      {
+        "id": "door_hard_to_name_12",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What would help someone understand the general idea?"
+      },
+      {
+        "id": "door_hard_to_name_13",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What would this idea look or feel like if it had a form?"
+      },
+      {
+        "id": "door_hard_to_name_14",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What small clue could point toward it?"
+      },
+      {
+        "id": "door_hard_to_name_15",
+        "door": "hard_to_name",
+        "prompt": "You chose \"something hard to name\". What would you like the final idea to help make clearer?"
+      }
+    ]
+  },
+  "set_prompts": {
+    "Emotion": [
+      {
+        "id": "set_emotion_01",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of moment or situation carries that feeling?"
+      },
+      {
+        "id": "set_emotion_02",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what does it connect to in your life?"
+      },
+      {
+        "id": "set_emotion_03",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe the way it feels?"
+      },
+      {
+        "id": "set_emotion_04",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what color, texture, or image seems to match it?"
+      },
+      {
+        "id": "set_emotion_05",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want it to bring back to mind?"
+      },
+      {
+        "id": "set_emotion_06",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what person, place, or memory seems connected to it?"
+      },
+      {
+        "id": "set_emotion_07",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what detail would help describe the feeling more clearly?"
+      },
+      {
+        "id": "set_emotion_08",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want someone else to understand about it?"
+      },
+      {
+        "id": "set_emotion_09",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what makes this feeling simple, layered, or somewhere in between?"
+      },
+      {
+        "id": "set_emotion_10",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of reminder would help carry it?"
+      },
+      {
+        "id": "set_emotion_11",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what image comes to mind and why does it fit?"
+      },
+      {
+        "id": "set_emotion_12",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what nearby feeling or idea helps explain it?"
+      },
+      {
+        "id": "set_emotion_13",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what makes this feeling personal to you?"
+      },
+      {
+        "id": "set_emotion_14",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of final look could carry that feeling?"
+      },
+      {
+        "id": "set_emotion_15",
+        "set": "Emotion",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what should stay with you after seeing it?"
+      }
+    ],
+    "Image": [
+      {
+        "id": "set_image_01",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what do you picture happening or appearing?"
+      },
+      {
+        "id": "set_image_02",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what detail in the picture matters most?"
+      },
+      {
+        "id": "set_image_03",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what feeling comes with that image?"
+      },
+      {
+        "id": "set_image_04",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what color, shape, or texture stands out in the image?"
+      },
+      {
+        "id": "set_image_05",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe the image to someone else?"
+      },
+      {
+        "id": "set_image_06",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what place, person, or time does it connect to?"
+      },
+      {
+        "id": "set_image_07",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what part of the image should stay recognizable?"
+      },
+      {
+        "id": "set_image_08",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would make this image feel personal to you?"
+      },
+      {
+        "id": "set_image_09",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what does this image remind you of?"
+      },
+      {
+        "id": "set_image_10",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how directly or gently would you want this image suggested?"
+      },
+      {
+        "id": "set_image_11",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what mood does this image carry?"
+      },
+      {
+        "id": "set_image_12",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what small piece of the image could stand for the larger idea?"
+      },
+      {
+        "id": "set_image_13",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want someone to notice first?"
+      },
+      {
+        "id": "set_image_14",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what should this image feel connected to?"
+      },
+      {
+        "id": "set_image_15",
+        "set": "Image",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you like the final idea to keep from that image?"
+      }
+    ],
+    "Place": [
+      {
+        "id": "set_place_01",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what place or setting comes to mind?"
+      },
+      {
+        "id": "set_place_02",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe being in that place?"
+      },
+      {
+        "id": "set_place_03",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what detail would help someone picture the place?"
+      },
+      {
+        "id": "set_place_04",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what color, sound, or texture belongs with it?"
+      },
+      {
+        "id": "set_place_05",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what makes the place feel familiar, imagined, close, or far away?"
+      },
+      {
+        "id": "set_place_06",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what feeling belongs in that place?"
+      },
+      {
+        "id": "set_place_07",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what person, memory, or time connects to that place?"
+      },
+      {
+        "id": "set_place_08",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would make the place recognizable to you?"
+      },
+      {
+        "id": "set_place_09",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what part of the place feels most important?"
+      },
+      {
+        "id": "set_place_10",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of reminder would carry that place with it?"
+      },
+      {
+        "id": "set_place_11",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what matters more about the place: how it looks or how it feels?"
+      },
+      {
+        "id": "set_place_12",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what small object or detail could point to that place?"
+      },
+      {
+        "id": "set_place_13",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe the mood of that place?"
+      },
+      {
+        "id": "set_place_14",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want to carry from that place?"
+      },
+      {
+        "id": "set_place_15",
+        "set": "Place",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what should this place bring to mind later?"
+      }
+    ],
+    "Quality": [
+      {
+        "id": "set_quality_01",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe that quality?"
+      },
+      {
+        "id": "set_quality_02",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of look or detail comes to mind?"
+      },
+      {
+        "id": "set_quality_03",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what makes it feel quiet, bold, soft, sharp, or something else?"
+      },
+      {
+        "id": "set_quality_04",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what color, shape, or texture fits that quality?"
+      },
+      {
+        "id": "set_quality_05",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would make that quality feel personal to you?"
+      },
+      {
+        "id": "set_quality_06",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want someone to notice about it?"
+      },
+      {
+        "id": "set_quality_07",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what feeling comes with that quality?"
+      },
+      {
+        "id": "set_quality_08",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what person, place, or memory connects to that quality?"
+      },
+      {
+        "id": "set_quality_09",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what small detail could show that quality?"
+      },
+      {
+        "id": "set_quality_10",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what makes it feel simple, layered, or somewhere between?"
+      },
+      {
+        "id": "set_quality_11",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what other idea does it sit next to in your mind?"
+      },
+      {
+        "id": "set_quality_12",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would make it feel right for you?"
+      },
+      {
+        "id": "set_quality_13",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how subtle or noticeable should that quality feel?"
+      },
+      {
+        "id": "set_quality_14",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of energy does that quality have?"
+      },
+      {
+        "id": "set_quality_15",
+        "set": "Quality",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what should that quality add to the final idea?"
+      }
+    ],
+    "Relationship": [
+      {
+        "id": "set_relationship_01",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of connection does it bring to mind?"
+      },
+      {
+        "id": "set_relationship_02",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what person, group, place, or memory connects to it?"
+      },
+      {
+        "id": "set_relationship_03",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what feeling comes with that connection?"
+      },
+      {
+        "id": "set_relationship_04",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want to remember about that connection?"
+      },
+      {
+        "id": "set_relationship_05",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what small detail points toward that connection?"
+      },
+      {
+        "id": "set_relationship_06",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe the way that connection feels?"
+      },
+      {
+        "id": "set_relationship_07",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would make that connection feel personal?"
+      },
+      {
+        "id": "set_relationship_08",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what object, color, or place seems to fit?"
+      },
+      {
+        "id": "set_relationship_09",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want someone else to understand?"
+      },
+      {
+        "id": "set_relationship_10",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of reminder would feel right?"
+      },
+      {
+        "id": "set_relationship_11",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe the mood of that connection?"
+      },
+      {
+        "id": "set_relationship_12",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what makes it feel tied to a specific moment or a larger feeling?"
+      },
+      {
+        "id": "set_relationship_13",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what image comes to mind for that connection?"
+      },
+      {
+        "id": "set_relationship_14",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what should this connection feel like in the final look?"
+      },
+      {
+        "id": "set_relationship_15",
+        "set": "Relationship",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what do you want to keep close about it?"
+      }
+    ],
+    "Symbol": [
+      {
+        "id": "set_symbol_01",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what does it make you picture?"
+      },
+      {
+        "id": "set_symbol_02",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what feeling comes with that picture?"
+      },
+      {
+        "id": "set_symbol_03",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what personal meaning or association does it have for you?"
+      },
+      {
+        "id": "set_symbol_04",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what part of it stands out most?"
+      },
+      {
+        "id": "set_symbol_05",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how clear or subtle would you want the reference to feel?"
+      },
+      {
+        "id": "set_symbol_06",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what color, shape, or texture fits it?"
+      },
+      {
+        "id": "set_symbol_07",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what person, place, memory, or value connects to it?"
+      },
+      {
+        "id": "set_symbol_08",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want it to remind you of?"
+      },
+      {
+        "id": "set_symbol_09",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would make it feel like yours?"
+      },
+      {
+        "id": "set_symbol_10",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what small detail could point toward it?"
+      },
+      {
+        "id": "set_symbol_11",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of mood does it carry?"
+      },
+      {
+        "id": "set_symbol_12",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want someone to notice first?"
+      },
+      {
+        "id": "set_symbol_13",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe the way it should feel?"
+      },
+      {
+        "id": "set_symbol_14",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what other image or idea sits near it?"
+      },
+      {
+        "id": "set_symbol_15",
+        "set": "Symbol",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what should it add to the final idea?"
+      }
+    ],
+    "Time": [
+      {
+        "id": "set_time_01",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what time, season, or moment comes to mind?"
+      },
+      {
+        "id": "set_time_02",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what feeling belongs to that time?"
+      },
+      {
+        "id": "set_time_03",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what makes it feel like a beginning, middle, ending, or something else?"
+      },
+      {
+        "id": "set_time_04",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what color, place, or image connects to it?"
+      },
+      {
+        "id": "set_time_05",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what detail helps describe that time?"
+      },
+      {
+        "id": "set_time_06",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what makes it feel like a specific moment or a broader season?"
+      },
+      {
+        "id": "set_time_07",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want to mark or remember?"
+      },
+      {
+        "id": "set_time_08",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of reminder would fit it?"
+      },
+      {
+        "id": "set_time_09",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe the movement or stillness in it?"
+      },
+      {
+        "id": "set_time_10",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what do you want to carry from that time?"
+      },
+      {
+        "id": "set_time_11",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe its mood?"
+      },
+      {
+        "id": "set_time_12",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what image comes up first?"
+      },
+      {
+        "id": "set_time_13",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what person, place, or choice connects to it?"
+      },
+      {
+        "id": "set_time_14",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would make it feel meaningful without saying too much?"
+      },
+      {
+        "id": "set_time_15",
+        "set": "Time",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what should this time feel like in the final look?"
+      }
+    ],
+    "Transformation": [
+      {
+        "id": "set_transformation_01",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of change comes to mind?"
+      },
+      {
+        "id": "set_transformation_02",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what feeling comes with that change?"
+      },
+      {
+        "id": "set_transformation_03",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what makes it feel like a beginning, shift, release, or something else?"
+      },
+      {
+        "id": "set_transformation_04",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want this idea to mark?"
+      },
+      {
+        "id": "set_transformation_05",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what image, color, or shape fits that change?"
+      },
+      {
+        "id": "set_transformation_06",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what part of the change feels most important?"
+      },
+      {
+        "id": "set_transformation_07",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would make that change feel personal?"
+      },
+      {
+        "id": "set_transformation_08",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what time, place, or choice connects to it?"
+      },
+      {
+        "id": "set_transformation_09",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what do you want to carry forward from it?"
+      },
+      {
+        "id": "set_transformation_10",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what small detail could show that movement?"
+      },
+      {
+        "id": "set_transformation_11",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe the pace or size of the change?"
+      },
+      {
+        "id": "set_transformation_12",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want someone else to understand about it?"
+      },
+      {
+        "id": "set_transformation_13",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of reminder would fit this idea?"
+      },
+      {
+        "id": "set_transformation_14",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what image or idea sits near it?"
+      },
+      {
+        "id": "set_transformation_15",
+        "set": "Transformation",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what should this change feel like in the final look?"
+      }
+    ],
+    "Value": [
+      {
+        "id": "set_value_01",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what does it mean to you?"
+      },
+      {
+        "id": "set_value_02",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what feeling comes with that value?"
+      },
+      {
+        "id": "set_value_03",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want it to remind you of?"
+      },
+      {
+        "id": "set_value_04",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what person, place, or moment connects to it?"
+      },
+      {
+        "id": "set_value_05",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what small detail helps describe it?"
+      },
+      {
+        "id": "set_value_06",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how would you describe the way this value feels?"
+      },
+      {
+        "id": "set_value_07",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would make it feel personal?"
+      },
+      {
+        "id": "set_value_08",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what image or color fits it?"
+      },
+      {
+        "id": "set_value_09",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would you want someone else to understand?"
+      },
+      {
+        "id": "set_value_10",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what kind of reminder would feel right?"
+      },
+      {
+        "id": "set_value_11",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what does it help you hold onto?"
+      },
+      {
+        "id": "set_value_12",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what other idea helps explain it?"
+      },
+      {
+        "id": "set_value_13",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what would make it feel grounded and real?"
+      },
+      {
+        "id": "set_value_14",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", how subtle or noticeable should this value feel?"
+      },
+      {
+        "id": "set_value_15",
+        "set": "Value",
+        "template": "You chose \"{word}\". When you think about \"{word}\", what should this value add to the final idea?"
+      }
+    ]
+  }
+}

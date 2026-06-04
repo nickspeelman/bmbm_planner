@@ -433,15 +433,6 @@
   font-weight: 820;
 }
 
-.style-note-score {
-  display: inline-block;
-  margin-left: 4px;
-  color: var(--muted);
-  font-size: 0.78em;
-  font-weight: 760;
-  letter-spacing: 0;
-}
-
 .constellation-cloud {
   position: relative;
   min-height: 230px;
