@@ -38,34 +38,46 @@ const JOURNEY_PART_WEIGHTS = {
 };
 
 const MICRO_EMBEDDING_LENSES = [
-  { key: "image", build: (text) => `image: ${text}` },
-  { key: "object", build: (text) => `object: ${text}` },
-  { key: "place", build: (text) => `place: ${text}` },
-  { key: "color", build: (text) => `color: ${text}` },
-  { key: "texture", build: (text) => `texture: ${text}` },
-  { key: "movement", build: (text) => `movement: ${text}` },
-  { key: "symbol", build: (text) => `symbol: ${text}` },
-  { key: "metaphor", build: (text) => `metaphor: ${text}` },
-  { key: "motif", build: (text) => `motif: ${text}` },
-  { key: "association", build: (text) => `association: ${text}` },
-  { key: "memory", build: (text) => `memory: ${text}` },
-  { key: "detail", build: (text) => `detail: ${text}` },
-  { key: "scene", build: (text) => `scene: ${text}` },
-  { key: "atmosphere", build: (text) => `atmosphere: ${text}` }
+  { key: "image", family: "sensory", build: (text) => `image: ${text}` },
+  { key: "object", family: "sensory", build: (text) => `object: ${text}` },
+  { key: "place", family: "sensory", build: (text) => `place: ${text}` },
+  { key: "color", family: "sensory", build: (text) => `color: ${text}` },
+  { key: "texture", family: "sensory", build: (text) => `texture: ${text}` },
+  { key: "movement", family: "action", build: (text) => `movement: ${text}` },
+  { key: "symbol", family: "symbolic", build: (text) => `symbol: ${text}` },
+  { key: "metaphor", family: "symbolic", build: (text) => `metaphor: ${text}` },
+  { key: "motif", family: "symbolic", build: (text) => `motif: ${text}` },
+  { key: "association", family: "symbolic", build: (text) => `association: ${text}` },
+  { key: "memory", family: "scene", build: (text) => `memory: ${text}` },
+  { key: "detail", family: "scene", build: (text) => `detail: ${text}` },
+  { key: "scene", family: "scene", build: (text) => `scene: ${text}` },
+  { key: "atmosphere", family: "scene", build: (text) => `atmosphere: ${text}` }
 ];
 
-const MICRO_LENS_TOP_N = 12;
-const CORE_CANDIDATE_POOL_SIZE = 80;
-const LITERAL_TEXT_PENALTY = 0.20;
-const DIVERSITY_WEIGHT = 0.18;
-const NEAR_DUPLICATE_THRESHOLD = 0.82;
+const BASELINE_EMBEDDING_LENSES = [
+  { key: "image", weight: 0.25, text: "image, object, place, color, texture, movement" },
+  { key: "symbol", weight: 0.25, text: "symbol, metaphor, motif, association" },
+  { key: "scene", weight: 0.20, text: "memory, detail, scene, atmosphere" },
+  { key: "inner", weight: 0.20, text: "emotion, feeling, value, care, want, need" },
+  { key: "meaning", weight: 0.10, text: "meaningful, personal, important, special, significant" }
+];
+
+const MICRO_LENS_TOP_N = 10;
+const CORE_CANDIDATE_POOL_SIZE = 110;
+const LITERAL_TEXT_PENALTY = 0.05;
+const GENERIC_BASELINE_WEIGHT = 3;
+const SPECIFICITY_BONUS_WEIGHT = 0.70;
+const DIVERSITY_WEIGHT = 0.25;
+const SAME_MICRO_LENS_PENALTY = 0.12;
+const SAME_MICRO_FAMILY_PENALTY = 0.08;
+const NEAR_DUPLICATE_THRESHOLD = 0.70;
 
 // Kept only for older saved sessions/debug helpers that may still reference answer-match code paths.
 const EXACT_ANSWER_MATCH_BOOST = 0;
 const CLOSE_ANSWER_MATCH_BOOST = 0;
 const MATCH_SIMILARITY_THRESHOLD = 0.92;
 
-export { CORE_EMBEDDING_LENSES, MICRO_EMBEDDING_LENSES, JOURNEY_PART_WEIGHTS };
+export { CORE_EMBEDDING_LENSES, MICRO_EMBEDDING_LENSES, BASELINE_EMBEDDING_LENSES, JOURNEY_PART_WEIGHTS };
 
 export function buildEmbeddingInput(journey) {
   return buildJourneyParts(journey)
@@ -197,7 +209,13 @@ export function buildMicroLensInputs(inputText) {
   );
 }
 
-export function rankCandidatesByEmbedding({ inputEmbedding, lensEmbeddings = null, weightedLensEmbeddings = null, microLensEmbeddings = null, vocabulary, journey, count = 6 }) {
+export function buildBaselineLensInputs() {
+  return Object.fromEntries(
+    BASELINE_EMBEDDING_LENSES.map((lens) => [lens.key, lens.text])
+  );
+}
+
+export function rankCandidatesByEmbedding({ inputEmbedding, lensEmbeddings = null, weightedLensEmbeddings = null, microLensEmbeddings = null, baselineLensEmbeddings = null, vocabulary, journey, count = 6 }) {
   const excludedIds = getExcludedWordIds(journey);
   const historyWords = getPreviouslyConsideredWords(journey);
   const journeyText = buildLiteralComparisonText(journey);
@@ -208,8 +226,8 @@ export function rankCandidatesByEmbedding({ inputEmbedding, lensEmbeddings = nul
     .filter((item) => item.embedding && !excludedIds.has(item.id))
     .filter((item) => !isTooSimilarToHistory(item, historyWords))
     .map((item) => weightedEntries.length
-      ? scoreCandidateWithWeightedCoreLenses(item, weightedEntries, journeyText)
-      : scoreCandidateWithCoreLenses(item, coreEmbeddings, journeyText)
+      ? scoreCandidateWithWeightedCoreLenses(item, weightedEntries, journeyText, baselineLensEmbeddings)
+      : scoreCandidateWithCoreLenses(item, coreEmbeddings, journeyText, baselineLensEmbeddings)
     )
     .sort((a, b) => b.score - a.score);
 
@@ -238,7 +256,10 @@ export function rankCandidatesByEmbedding({ inputEmbedding, lensEmbeddings = nul
           weight: Number(entry.partWeight.toFixed(4))
         }])
       ).values()),
-      microLenses: microLensEmbeddings ? MICRO_EMBEDDING_LENSES.map(({ key }) => key) : [],
+      microLenses: microLensEmbeddings ? MICRO_EMBEDDING_LENSES.map(({ key, family }) => ({ key, family })) : [],
+      baselineLenses: baselineLensEmbeddings ? BASELINE_EMBEDDING_LENSES.map(({ key, weight }) => ({ key, weight })) : [],
+      genericBaselineWeight: GENERIC_BASELINE_WEIGHT,
+      specificityBonusWeight: SPECIFICITY_BONUS_WEIGHT,
       topRawCandidates: scoredAll.slice(0, 30).map(toDebugCandidate),
       candidatePoolSize: pool.length,
       finalCandidates: finalCandidates.map(toDebugCandidate)
@@ -310,18 +331,42 @@ export function rankDiverseExploratoryFallback({ vocabulary, journey, count = 6 
   };
 }
 
-export function rankResonanceWordsByEmbedding({ inputEmbedding, vocabulary, journey, sets = [], perSet = 10 }) {
-  const scored = vocabulary
+export function rankResonanceWordsByEmbedding({ inputEmbedding, lensEmbeddings = null, weightedLensEmbeddings = null, microLensEmbeddings = null, baselineLensEmbeddings = null, vocabulary, journey, sections = null, perSection = 10, sets = [], perSet = 10 }) {
+  const journeyText = buildLiteralComparisonText(journey);
+  const weightedEntries = buildWeightedEmbeddingEntries(weightedLensEmbeddings);
+  const coreEmbeddings = lensEmbeddings || { direct: inputEmbedding };
+
+  const scoredAll = vocabulary
     .filter((item) => item.embedding)
-    .map((item) => ({
-      ...item,
-      score: dotProduct(inputEmbedding, item.embedding),
-      rankingMethod: "embedding"
-    }))
+    .map((item) => weightedEntries.length
+      ? scoreCandidateWithWeightedCoreLenses(item, weightedEntries, journeyText, baselineLensEmbeddings)
+      : scoreCandidateWithCoreLenses(item, coreEmbeddings, journeyText, baselineLensEmbeddings)
+    )
     .sort((a, b) => b.score - a.score);
 
+  if (sections) {
+    const excludedIds = new Set(journey.selectedWordIds || []);
+    const historyWords = (journey.selectedWordIds || [])
+      .map((id) => journey.vocabularyById?.[id])
+      .filter(Boolean);
+    const pool = buildLensCandidatePool({
+      vocabulary,
+      scoredAll,
+      microLensEmbeddings,
+      excludedIds,
+      historyWords
+    });
+
+    return buildFinalWordSections({
+      scoredCandidates: pool,
+      journey,
+      perSection,
+      method: "weighted_core_lenses_micro_discovery_embedding"
+    });
+  }
+
   return buildResonanceGroups({
-    scoredCandidates: scored,
+    scoredCandidates: scoredAll,
     journey,
     sets,
     perSet,
@@ -329,7 +374,7 @@ export function rankResonanceWordsByEmbedding({ inputEmbedding, vocabulary, jour
   });
 }
 
-export function rankResonanceWordsByKeywordFallback({ inputText, vocabulary, journey, sets = [], perSet = 10 }) {
+export function rankResonanceWordsByKeywordFallback({ inputText, vocabulary, journey, sections = null, perSection = 10, sets = [], perSet = 10 }) {
   const inputTokens = tokenizeThemeText(inputText);
 
   const scored = vocabulary
@@ -348,6 +393,19 @@ export function rankResonanceWordsByKeywordFallback({ inputText, vocabulary, jou
     .sort((a, b) => b.score - a.score);
 
   const useful = scored.some((item) => item.score > 0);
+
+  if (sections) {
+    return {
+      ...buildFinalWordSections({
+        scoredCandidates: useful ? scored : shuffle(scored),
+        journey,
+        perSection,
+        method: useful ? "keyword_fallback" : "diverse_fallback"
+      }),
+      useful
+    };
+  }
+
   const grouped = buildResonanceGroups({
     scoredCandidates: useful ? scored : shuffle(scored),
     journey,
@@ -420,7 +478,7 @@ function buildWeightedEmbeddingEntries(weightedLensEmbeddings) {
     .filter((entry) => entry.embedding && Number.isFinite(entry.weight));
 }
 
-function scoreCandidateWithWeightedCoreLenses(item, weightedEntries, journeyText) {
+function scoreCandidateWithWeightedCoreLenses(item, weightedEntries, journeyText, baselineLensEmbeddings = null) {
   let baseScore = 0;
   const lensScores = {};
   const journeyPartScores = {};
@@ -434,19 +492,26 @@ function scoreCandidateWithWeightedCoreLenses(item, weightedEntries, journeyText
   }
 
   const literalPenalty = appearsInClientText(item, journeyText) ? LITERAL_TEXT_PENALTY : 0;
+  const baselineScore = scoreCandidateAgainstBaseline(item, baselineLensEmbeddings);
+  const specificityBonus = baselineLensEmbeddings ? (baseScore - baselineScore) * SPECIFICITY_BONUS_WEIGHT : 0;
+  const baselinePenalty = baselineScore * GENERIC_BASELINE_WEIGHT;
+  const score = baseScore + specificityBonus - literalPenalty - baselinePenalty;
 
   return {
     ...item,
-    score: baseScore - literalPenalty,
+    score,
     baseScore,
     literalPenalty,
+    baselineScore,
+    baselinePenalty,
+    specificityBonus,
     lensScores,
     journeyPartScores,
     rankingMethod: "weighted_core_lens_embedding"
   };
 }
 
-function scoreCandidateWithCoreLenses(item, coreEmbeddings, journeyText) {
+function scoreCandidateWithCoreLenses(item, coreEmbeddings, journeyText, baselineLensEmbeddings = null) {
   let baseScore = 0;
   const lensScores = {};
 
@@ -464,15 +529,38 @@ function scoreCandidateWithCoreLenses(item, coreEmbeddings, journeyText) {
   }
 
   const literalPenalty = appearsInClientText(item, journeyText) ? LITERAL_TEXT_PENALTY : 0;
+  const baselineScore = scoreCandidateAgainstBaseline(item, baselineLensEmbeddings);
+  const specificityBonus = baselineLensEmbeddings ? (baseScore - baselineScore) * SPECIFICITY_BONUS_WEIGHT : 0;
+  const baselinePenalty = baselineScore * GENERIC_BASELINE_WEIGHT;
+  const score = baseScore + specificityBonus - literalPenalty - baselinePenalty;
 
   return {
     ...item,
-    score: baseScore - literalPenalty,
+    score,
     baseScore,
     literalPenalty,
+    baselineScore,
+    baselinePenalty,
+    specificityBonus,
     lensScores,
     rankingMethod: "core_lens_embedding"
   };
+}
+
+function scoreCandidateAgainstBaseline(item, baselineLensEmbeddings) {
+  if (!baselineLensEmbeddings || !item.embedding) return 0;
+
+  let weightedScore = 0;
+  let totalWeight = 0;
+
+  for (const lens of BASELINE_EMBEDDING_LENSES) {
+    const embedding = baselineLensEmbeddings[lens.key];
+    if (!embedding) continue;
+    weightedScore += lens.weight * dotProduct(item.embedding, embedding);
+    totalWeight += lens.weight;
+  }
+
+  return totalWeight ? weightedScore / totalWeight : 0;
 }
 
 function buildLensCandidatePool({ vocabulary, scoredAll, microLensEmbeddings, excludedIds, historyWords }) {
@@ -493,7 +581,8 @@ function buildLensCandidatePool({ vocabulary, scoredAll, microLensEmbeddings, ex
         .map((item) => ({
           ...item,
           microLensScore: dotProduct(item.embedding, embedding),
-          microLens: lens.key
+          microLens: lens.key,
+          microLensFamily: lens.family || lens.key
         }))
         .sort((a, b) => b.microLensScore - a.microLensScore)
         .slice(0, MICRO_LENS_TOP_N);
@@ -503,12 +592,13 @@ function buildLensCandidatePool({ vocabulary, scoredAll, microLensEmbeddings, ex
         if (existing) {
           existing.microLensMatches = [
             ...(existing.microLensMatches || []),
-            { key: item.microLens, score: item.microLensScore }
+            { key: item.microLens, family: item.microLensFamily, score: item.microLensScore }
           ];
         } else {
           const scored = scoredAll.find((candidate) => candidate.id === item.id);
           if (scored) {
-            scored.microLensMatches = [{ key: item.microLens, score: item.microLensScore }];
+            scored.microLensMatches = [{ key: item.microLens, family: item.microLensFamily, score: item.microLensScore }];
+            assignBestMicroLens(scored);
             poolById.set(scored.id, scored);
           }
         }
@@ -516,7 +606,24 @@ function buildLensCandidatePool({ vocabulary, scoredAll, microLensEmbeddings, ex
     }
   }
 
-  return Array.from(poolById.values()).sort((a, b) => b.score - a.score);
+  const pool = Array.from(poolById.values());
+  for (const candidate of pool) assignBestMicroLens(candidate);
+  return pool.sort((a, b) => b.score - a.score);
+}
+
+function assignBestMicroLens(candidate) {
+  const matches = Array.isArray(candidate.microLensMatches) ? candidate.microLensMatches : [];
+  if (!matches.length) return candidate;
+
+  const best = matches.reduce((winner, match) => {
+    if (!winner) return match;
+    return (match.score || 0) > (winner.score || 0) ? match : winner;
+  }, null);
+
+  candidate.bestMicroLens = best?.key || null;
+  candidate.bestMicroLensFamily = best?.family || null;
+  candidate.bestMicroLensScore = best?.score || 0;
+  return candidate;
 }
 
 function selectDiverseEmbeddingBatch(scoredCandidates, count = 6) {
@@ -536,12 +643,15 @@ function selectDiverseEmbeddingBatch(scoredCandidates, count = 6) {
       const maxSimilarity = maxEmbeddingSimilarity(candidate, selected);
       if (maxSimilarity > NEAR_DUPLICATE_THRESHOLD) continue;
 
-      const adjustedScore = candidate.score - (maxSimilarity * DIVERSITY_WEIGHT);
+      const embeddingDiversityPenalty = maxSimilarity * DIVERSITY_WEIGHT;
+      const microLensPenalty = getMicroLensBatchPenalty(candidate, selected);
+      const adjustedScore = candidate.score - embeddingDiversityPenalty - microLensPenalty;
       if (adjustedScore > bestAdjustedScore) {
         bestCandidate = {
           ...candidate,
           adjustedScore,
-          diversityPenalty: maxSimilarity * DIVERSITY_WEIGHT,
+          diversityPenalty: embeddingDiversityPenalty,
+          microLensPenalty,
           maxSimilarityToBatch: maxSimilarity
         };
         bestAdjustedScore = adjustedScore;
@@ -565,6 +675,21 @@ function selectDiverseEmbeddingBatch(scoredCandidates, count = 6) {
   }
 
   return selected.slice(0, count);
+}
+
+function getMicroLensBatchPenalty(candidate, selected) {
+  if (!selected.length) return 0;
+
+  let penalty = 0;
+  if (candidate.bestMicroLens && selected.some((item) => item.bestMicroLens === candidate.bestMicroLens)) {
+    penalty += SAME_MICRO_LENS_PENALTY;
+  }
+
+  if (candidate.bestMicroLensFamily && selected.some((item) => item.bestMicroLensFamily === candidate.bestMicroLensFamily)) {
+    penalty += SAME_MICRO_FAMILY_PENALTY;
+  }
+
+  return penalty;
 }
 
 function maxEmbeddingSimilarity(candidate, selected) {
@@ -601,6 +726,99 @@ function appearsInClientText(candidate, journeyText) {
     if (key.includes(" ")) return text.includes(key);
     return textTokens.has(key);
   });
+}
+
+function buildFinalWordSections({ scoredCandidates, journey, perSection = 8, method }) {
+  const shownIds = new Set(journey.shownWordIds || []);
+  const selectedIds = new Set(journey.selectedWordIds || []);
+  const rejectedIds = new Set(journey.rejectedWordIds || []);
+  const selectedWords = Array.from(selectedIds)
+    .map((id) => journey.vocabularyById?.[id])
+    .filter(Boolean);
+
+  const globallyUsedIds = new Set(selectedIds);
+  const globallyUsedWords = [...selectedWords];
+  const topRawCandidates = {};
+
+  const cleanNewPool = scoredCandidates
+    .filter((candidate) => !shownIds.has(candidate.id))
+    .filter((candidate) => !selectedIds.has(candidate.id))
+    .filter((candidate) => !isTooSimilarByWord(candidate, selectedWords))
+    .filter((candidate) => !isTooSimilarToSelected(candidate, selectedWords, 0.88))
+    .map(assignBestCoreLens)
+    .sort((a, b) => b.score - a.score);
+
+  const bucketDefinitions = [
+    { key: "direct", lensKey: "direct" },
+    { key: "image", lensKey: "image" },
+    { key: "symbol", lensKey: "symbol" },
+    { key: "scene", lensKey: "scene" }
+  ];
+
+  const groups = {};
+
+  for (const bucket of bucketDefinitions) {
+    const bucketPool = cleanNewPool
+      .filter((candidate) => candidate.bestCoreLens === bucket.lensKey)
+      .filter((candidate) => !globallyUsedIds.has(candidate.id))
+      .filter((candidate) => !isTooSimilarByWord(candidate, globallyUsedWords))
+      .filter((candidate) => !isTooSimilarToSelected(candidate, globallyUsedWords, 0.88));
+
+    topRawCandidates[bucket.key] = bucketPool.slice(0, 30).map(toDebugCandidate);
+
+    const selected = selectDiverseEmbeddingBatch(bucketPool, perSection);
+    groups[bucket.key] = selected;
+
+    for (const item of selected) {
+      globallyUsedIds.add(item.id);
+      globallyUsedWords.push(item);
+    }
+  }
+
+  const secondChancePool = scoredCandidates
+    .filter((candidate) => shownIds.has(candidate.id) || rejectedIds.has(candidate.id))
+    .filter((candidate) => !selectedIds.has(candidate.id))
+    .filter((candidate) => !globallyUsedIds.has(candidate.id))
+    .filter((candidate) => !isTooSimilarByWord(candidate, selectedWords))
+    .filter((candidate) => !isTooSimilarToSelected(candidate, selectedWords, 0.88))
+    .map(assignBestCoreLens)
+    .sort((a, b) => b.score - a.score);
+
+  topRawCandidates.second_chance = secondChancePool.slice(0, 30).map(toDebugCandidate);
+  groups.second_chance = selectDiverseEmbeddingBatch(secondChancePool, perSection);
+
+  return {
+    groups,
+    debug: {
+      method,
+      sectionMode: true,
+      groupedByCoreLens: true,
+      topRawCandidates,
+      finalCandidatesBySet: Object.fromEntries(
+        Object.entries(groups).map(([section, items]) => [section, items.map(toDebugCandidate)])
+      )
+    }
+  };
+}
+
+function assignBestCoreLens(candidate) {
+  const scores = candidate?.lensScores || {};
+  const entries = Object.entries(scores)
+    .filter(([, value]) => Number.isFinite(value));
+
+  if (!entries.length) {
+    return { ...candidate, bestCoreLens: "direct", bestCoreLensScore: candidate?.score || 0 };
+  }
+
+  const [bestKey, bestScore] = entries.reduce((winner, entry) => (
+    entry[1] > winner[1] ? entry : winner
+  ));
+
+  return {
+    ...candidate,
+    bestCoreLens: bestKey,
+    bestCoreLensScore: bestScore
+  };
 }
 
 function buildResonanceGroups({ scoredCandidates, journey, sets, perSet, method }) {
@@ -889,7 +1107,12 @@ function toDebugCandidate(item) {
     baseScore: Number.isFinite(item.baseScore) ? Number(item.baseScore.toFixed(4)) : item.baseScore,
     adjustedScore: Number.isFinite(item.adjustedScore) ? Number(item.adjustedScore.toFixed(4)) : item.adjustedScore,
     literalPenalty: Number.isFinite(item.literalPenalty) ? Number(item.literalPenalty.toFixed(4)) : item.literalPenalty,
+    baselineScore: Number.isFinite(item.baselineScore) ? Number(item.baselineScore.toFixed(4)) : item.baselineScore,
+    baselinePenalty: Number.isFinite(item.baselinePenalty) ? Number(item.baselinePenalty.toFixed(4)) : item.baselinePenalty,
     diversityPenalty: Number.isFinite(item.diversityPenalty) ? Number(item.diversityPenalty.toFixed(4)) : item.diversityPenalty,
+    microLensPenalty: Number.isFinite(item.microLensPenalty) ? Number(item.microLensPenalty.toFixed(4)) : item.microLensPenalty,
+    bestMicroLens: item.bestMicroLens,
+    bestMicroLensFamily: item.bestMicroLensFamily,
     maxSimilarityToBatch: Number.isFinite(item.maxSimilarityToBatch) ? Number(item.maxSimilarityToBatch.toFixed(4)) : item.maxSimilarityToBatch,
     journeyPartScores: item.journeyPartScores
       ? Object.fromEntries(Object.entries(item.journeyPartScores).map(([key, value]) => [
@@ -900,6 +1123,7 @@ function toDebugCandidate(item) {
     microLensMatches: Array.isArray(item.microLensMatches)
       ? item.microLensMatches.map((match) => ({
           key: match.key,
+          family: match.family,
           score: Number.isFinite(match.score) ? Number(match.score.toFixed(4)) : match.score
         }))
       : undefined,

@@ -475,3 +475,58 @@ button:disabled {
 .theme-final-path-panel .theme-path {
   font-size: 0.98rem;
 }
+
+.theme-title-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.theme-title-input[readonly] {
+  cursor: default;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.theme-existing-notes-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.theme-existing-notes-panel h2 {
+  margin-bottom: 0.25rem;
+}
+
+.theme-existing-notes-panel blockquote {
+  margin: 0;
+  color: var(--theme-text);
+  font-style: italic;
+}
+
+.theme-subnote-card {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--theme-border);
+}
+
+.theme-subnote-card h2 {
+  margin: 0 0 0.4rem;
+  font-size: 0.98rem;
+}
+
+.theme-saved-note-preview {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--theme-muted);
+}
+
+.theme-saved-note-preview p {
+  margin: 0;
+}
+
+.theme-saved-note-preview p + p {
+  margin-top: 0.45rem;
+}

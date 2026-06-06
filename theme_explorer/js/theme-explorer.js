@@ -1,6 +1,7 @@
 import { DOOR_LABELS, SET_LABELS, loadThemeData } from "./theme-data.js";
 import { embedTextWithRetry, getEmbeddingStatus, initEmbeddingService } from "./theme-embeddings.js";
 import {
+  buildBaselineLensInputs,
   buildCoreLensInputs,
   buildEmbeddingInput,
   buildMicroLensInputs,
@@ -16,8 +17,14 @@ import { buildSubmissionObject, buildThemeCard, makeId, titleCase } from "./them
 const STORAGE_KEY = "bmbm_theme_explorer_session_v1";
 const DEFAULT_MAX_ROUNDS = 3;
 const CANDIDATE_COUNT = 6;
-const RESONANCE_SETS = ["Image", "Symbol", "Emotion", "Place", "Value"];
-const RESONANCE_WORDS_PER_SET = 10;
+const FINAL_WORD_SECTIONS = [
+  { key: "direct", label: "Close to what you wrote", helper: "New words that match the plain language of this theme." },
+  { key: "image", label: "Images and details", helper: "New words with a visual, sensory, or concrete feel." },
+  { key: "symbol", label: "Symbols and patterns", helper: "New words that may work as a symbol, pattern, or motif." },
+  { key: "scene", label: "Scenes and atmosphere", helper: "New words with a memory, setting, or mood around them." },
+  { key: "second_chance", label: "Worth another look", helper: "Words that came up earlier, but may fit better now." }
+];
+const FINAL_WORDS_PER_SECTION = 8;
 
 const rootDefault = document.querySelector("#theme-explorer-root");
 
@@ -56,6 +63,9 @@ function createEmptyJourney() {
     id: makeId("journey"),
     createdAt: new Date().toISOString(),
     status: "not-started",
+    existingThemeIdea: "",
+    existingThemeDetails: "",
+    skippedExplorer: false,
     selectedDoor: null,
     initialPrompt: null,
     initialShortPrompt: null,
@@ -79,6 +89,7 @@ function createEmptyJourney() {
     resonanceOptionsBySet: {},
     resonanceSelections: {},
     themeNameOverride: "",
+    themeNameIsEditing: false,
     userComments: ""
   };
 }
@@ -197,6 +208,8 @@ function render() {
 
   const screenHtml = {
     intro: renderIntro,
+    pre_theme_questions: renderPreThemeQuestions,
+    explorer_choice: renderExplorerChoice,
     door_select: renderDoorSelect,
     initial_short_prompt: renderInitialShortPrompt,
     initial_detail_prompt: renderInitialDetailPrompt,
@@ -219,17 +232,57 @@ function render() {
 function renderIntro() {
   return `
     <div class="theme-stack theme-intro-screen">
-      <p class="eyebrow">Theme Explorer</p>
-      <h1>Find a few words for the idea you want to bring in.</h1>
+      <p class="eyebrow">Themes</p>
+      <h1>Themes.</h1>
       <p class="subtext theme-large-copy">
-        A low-pressure way to explore a memory, image, place, value, or idea before talking with Michele.
-        You can skip, back up, restart, or choose a different path at any point.
+        You don't need to have a theme at all. Some clients come in with a clear idea, some have a loose direction,
+        and some just want Michele to help with a cohesive aesthetic. All of that is okay. In this section you can help Michele understand what your new look should mean.
       </p>
       ${renderModelStatus()}
       <div class="button-row">
-        <button class="primary-btn" data-action="start">Start</button>
+        <button class="primary-btn" data-action="start">Next</button>
         ${state.savedThemes.length ? `<button class="secondary-btn" data-action="view-saved">Review saved themes</button>` : ""}
       </div>
+    </div>
+  `;
+}
+
+function renderPreThemeQuestions() {
+  return `
+    <div class="theme-stack">
+      <p class="eyebrow">Theme notes</p>
+      <h1>Anything already in mind?</h1>
+      <p class="subtext">Answer either question, both questions, or neither. If you do not want a theme, you can leave these blank.</p>
+
+      <label class="theme-answer-block">
+        <span class="theme-label">Theme, idea, or direction</span>
+        <textarea class="soft-input theme-textarea" data-field="existing-theme-idea" rows="4" placeholder="For example: a place, a memory, a phrase, a person, a feeling, or a general direction.">${escapeHtml(state.currentJourney.existingThemeIdea || "")}</textarea>
+      </label>
+
+      <label class="theme-answer-block">
+        <span class="theme-label">Anything Michele should know about it?</span>
+        <textarea class="soft-input theme-textarea" data-field="existing-theme-details" rows="4" placeholder="Optional notes, details, or context.">${escapeHtml(state.currentJourney.existingThemeDetails || "")}</textarea>
+      </label>
+
+      <div class="button-row">
+        <button class="primary-btn" data-action="continue-to-explorer-choice">Next</button>
+      </div>
+      ${renderNavButtons({ back: true, restart: false })}
+    </div>
+  `;
+}
+
+function renderExplorerChoice() {
+  return `
+    <div class="theme-stack">
+      <p class="eyebrow">Optional step</p>
+      <h1>Want help finding a few more words?</h1>
+      <p class="subtext">If you want to take a few minutes develop some theme ideas, the explorer can help give Michele more to work with.</p>
+      <div class="button-row">
+        <button class="primary-btn" data-action="continue-to-theme-explorer">Try the explorer.</button>
+        <button class="secondary-btn" data-action="skip-theme-explorer">Skip this section</button>
+      </div>
+      ${renderNavButtons({ back: true, restart: false })}
     </div>
   `;
 }
@@ -420,7 +473,7 @@ function renderEarlierAnswersToggle() {
 
 function renderResonanceSelect() {
   const groups = state.currentJourney.resonanceOptionsBySet || {};
-  const hasGroups = RESONANCE_SETS.some((set) => (groups[set] || []).length);
+  const hasGroups = FINAL_WORD_SECTIONS.some((section) => (groups[section.key] || []).length);
   const selectedCount = Object.keys(state.currentJourney.resonanceSelections || {}).length;
 
   return `
@@ -431,7 +484,7 @@ function renderResonanceSelect() {
       <p class="subtext">Pick any words that feel like part of this theme. You can choose as many or as few as you want.</p>
       ${hasGroups ? `
         <div class="theme-resonance-groups">
-          ${RESONANCE_SETS.map((set) => renderResonanceGroup(set, groups[set] || [])).join("")}
+          ${FINAL_WORD_SECTIONS.map((section) => renderResonanceGroup(section, groups[section.key] || [])).join("")}
         </div>
       ` : `
         <div class="theme-soft-panel">
@@ -448,12 +501,17 @@ function renderResonanceSelect() {
   `;
 }
 
-function renderResonanceGroup(set, items) {
+function renderResonanceGroup(section, items) {
   if (!items.length) return "";
+
+  const sectionKey = typeof section === "string" ? section : section.key;
+  const sectionLabel = typeof section === "string" ? (SET_LABELS[section] || section) : section.label;
+  const helper = typeof section === "string" ? "" : section.helper;
 
   return `
     <section class="theme-resonance-group">
-      <h2>${escapeHtml(SET_LABELS[set] || set)}</h2>
+      <h2>${escapeHtml(sectionLabel)}</h2>
+      ${helper ? `<p class="subtext theme-inline-note">${escapeHtml(helper)}</p>` : ""}
       <div class="theme-chip-grid">
         ${items.map((item) => {
           const selected = Boolean(state.currentJourney.resonanceSelections?.[item.id]);
@@ -462,7 +520,7 @@ function renderResonanceGroup(set, items) {
               class="theme-chip ${selected ? "is-selected" : ""}"
               data-action="toggle-resonance-word"
               data-word-id="${escapeHtml(item.id)}"
-              data-set="${escapeHtml(set)}"
+              data-set="${escapeHtml(sectionKey)}"
               aria-pressed="${selected ? "true" : "false"}"
               type="button"
             >
@@ -475,21 +533,81 @@ function renderResonanceGroup(set, items) {
   `;
 }
 
+function renderExistingThemeNotesPanel() {
+  const idea = (state.currentJourney.existingThemeIdea || "").trim();
+  const details = (state.currentJourney.existingThemeDetails || "").trim();
+
+  if (!idea && !details) return "";
+
+  return `
+    <section class="theme-soft-panel theme-existing-notes-panel" aria-label="Existing theme notes">
+      <p class="theme-context-kicker">Theme notes</p>
+      ${idea ? `<div><h2>Theme, idea, or direction</h2><blockquote>${escapeHtml(idea)}</blockquote></div>` : ""}
+      ${details ? `<div><h2>Notes for Michele</h2><blockquote>${escapeHtml(details)}</blockquote></div>` : ""}
+    </section>
+  `;
+}
+
+function renderSavedThemeNotesSummary() {
+  const themesWithNotes = state.savedThemes
+    .map((theme) => theme.themeCard)
+    .filter((card) => card?.existingTheme?.idea || card?.existingTheme?.details);
+
+  if (!themesWithNotes.length) return "";
+
+  return `
+    <section class="theme-soft-panel theme-existing-notes-panel" aria-label="Theme notes to include">
+      <p class="theme-context-kicker">Theme notes</p>
+      <p class="subtext theme-inline-note">These notes will be included with the themes you choose.</p>
+      ${themesWithNotes.map((card) => `
+        <article class="theme-subnote-card">
+          <h2>${escapeHtml(card.workingThemeName || "Theme")}</h2>
+          ${card.existingTheme.idea ? `<blockquote>${escapeHtml(card.existingTheme.idea)}</blockquote>` : ""}
+          ${card.existingTheme.details ? `<blockquote>${escapeHtml(card.existingTheme.details)}</blockquote>` : ""}
+        </article>
+      `).join("")}
+    </section>
+  `;
+}
+
+function renderSavedThemeExistingNotes(card) {
+  const idea = card?.existingTheme?.idea || "";
+  const details = card?.existingTheme?.details || "";
+
+  if (!idea && !details) return "";
+
+  return `
+    <div class="theme-saved-note-preview">
+      ${idea ? `<p>${escapeHtml(idea)}</p>` : ""}
+      ${details ? `<p>${escapeHtml(details)}</p>` : ""}
+    </div>
+  `;
+}
+
 function renderReview() {
   const themeCard = buildThemeCard(state.currentJourney, state.data.vocabularyById);
   return `
     <div class="theme-stack">
       ${renderProgress(true)}
       <p class="eyebrow">Theme Card</p>
-      <label class="theme-answer-block theme-title-edit-block">
-        <span class="theme-label">Theme name</span>
-        <input class="soft-input theme-title-input" data-field="theme-name" value="${escapeHtml(themeCard.workingThemeName)}" />
-      </label>
+      <section class="theme-title-edit-block">
+        <div class="theme-title-label-row">
+          <label class="theme-label" for="theme-name-input">Theme name</label>
+          <button class="theme-link-button" data-action="edit-theme-name" type="button">Edit</button>
+        </div>
+        <input
+          id="theme-name-input"
+          class="soft-input theme-title-input"
+          data-field="theme-name"
+          value="${escapeHtml(themeCard.workingThemeName)}"
+          ${state.currentJourney.themeNameIsEditing ? "" : "readonly"}
+        />
+      </section>
       <section class="theme-soft-panel theme-final-path-panel" aria-label="Theme path">
         <p class="theme-context-kicker">Path</p>
         <p class="theme-path">${escapeHtml(themeCard.path.join(" → "))}</p>
       </section>
-      ${renderThemeCard(themeCard, { hidePathAndSelectedWords: true })}
+      ${renderThemeCard(themeCard, { hidePathAndSelectedWords: true, hidePreThemeNotes: true })}
       <label class="theme-answer-block">
         <span class="theme-label">Optional note for Michele</span>
         <textarea class="soft-input theme-textarea" data-field="journey-comments" rows="4" placeholder="Anything to add, clarify, or keep in mind?">${escapeHtml(state.currentJourney.userComments || "")}</textarea>
@@ -509,6 +627,7 @@ function renderSavedThemes() {
       <p class="eyebrow">Saved themes</p>
       <h1>Choose what to share.</h1>
       <p class="subtext">Select one or more themes to include in the final Theme Explorer object.</p>
+      ${renderSavedThemeNotesSummary()}
       ${state.savedThemes.length ? `
         <div class="theme-saved-list">
           ${state.savedThemes.map(renderSavedThemeItem).join("")}
@@ -541,7 +660,7 @@ function renderSavedThemeItem(savedTheme) {
       </label>
       <details>
         <summary>View notes</summary>
-        ${renderThemeCard(card, { compact: true })}
+        ${renderThemeCard(card, { compact: true, hidePreThemeNotes: true })}
       </details>
       <button class="theme-link-button" data-action="remove-saved-theme" data-theme-id="${escapeHtml(savedTheme.id)}">Remove</button>
     </article>
@@ -586,6 +705,10 @@ function renderExportResult() {
 function renderThemeCard(themeCard, options = {}) {
   const compact = Boolean(options.compact);
   const hidePathAndSelectedWords = Boolean(options.hidePathAndSelectedWords);
+  const hidePreThemeNotes = Boolean(options.hidePreThemeNotes);
+  const visibleNotes = hidePreThemeNotes
+    ? (themeCard.notes || []).filter((note) => note.type !== "pre_theme")
+    : (themeCard.notes || []);
   return `
     <section class="theme-result-card ${compact ? "is-compact" : ""}">
       ${hidePathAndSelectedWords ? "" : `
@@ -613,7 +736,7 @@ function renderThemeCard(themeCard, options = {}) {
       <div>
         <h2>Your notes</h2>
         <div class="theme-response-list">
-          ${themeCard.notes.map((note) => `
+          ${visibleNotes.length ? visibleNotes.map((note) => `
             <article class="theme-response-item">
               <h3>${escapeHtml(note.word ? titleCase(note.word) : themeCard.startingDoor.label)}</h3>
               ${note.contextText ? `<p><strong>Context:</strong> ${escapeHtml(note.contextText)}</p>` : ""}
@@ -621,7 +744,7 @@ function renderThemeCard(themeCard, options = {}) {
               <p><strong>Prompt:</strong> ${escapeHtml(note.promptText)}</p>
               <blockquote>${escapeHtml(note.answer)}</blockquote>
             </article>
-          `).join("")}
+          `).join("") : `<p class="subtext theme-inline-note">No explorer answers are shown here.</p>`}
         </div>
       </div>
       ${themeCard.userComments ? `
@@ -706,7 +829,30 @@ async function handleAction(event) {
   switch (action) {
     case "start":
       startNewJourney();
+      navigate("pre_theme_questions");
+      break;
+    case "continue-to-explorer-choice":
+      savePreThemeAnswers();
+      navigate("explorer_choice");
+      break;
+    case "continue-to-theme-explorer":
+      savePreThemeAnswers();
       navigate("door_select");
+      break;
+    case "skip-theme-explorer":
+      savePreThemeAnswers();
+      skipExplorerToReview();
+      break;
+    case "edit-theme-name":
+      state.currentJourney.themeNameIsEditing = true;
+      render();
+      setTimeout(() => {
+        const input = state.root.querySelector('[data-field="theme-name"]');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }, 0);
       break;
     case "view-saved":
       navigate("saved_themes");
@@ -759,7 +905,7 @@ async function handleAction(event) {
       break;
     case "explore-another":
       startNewJourney();
-      navigate("door_select");
+      navigate("intro");
       break;
     case "toggle-theme-selection":
       toggleThemeSelection(target.dataset.themeId, target.checked);
@@ -785,7 +931,7 @@ async function handleAction(event) {
       break;
     case "restart-current":
       startNewJourney();
-      navigate("door_select");
+      navigate("intro");
       break;
     default:
       break;
@@ -795,6 +941,14 @@ async function handleAction(event) {
 function handleTextInput(event) {
   const field = event.currentTarget.dataset.field;
   const value = event.currentTarget.value;
+
+  if (field === "existing-theme-idea") {
+    state.currentJourney.existingThemeIdea = value;
+  }
+
+  if (field === "existing-theme-details") {
+    state.currentJourney.existingThemeDetails = value;
+  }
 
   if (field === "initial-answer") {
     state.currentJourney.initialAnswer = value;
@@ -831,6 +985,23 @@ function handleTextInput(event) {
   emitChange();
 }
 
+function savePreThemeAnswers() {
+  state.currentJourney.existingThemeIdea = getFieldValue("existing-theme-idea", state.currentJourney.existingThemeIdea || "");
+  state.currentJourney.existingThemeDetails = getFieldValue("existing-theme-details", state.currentJourney.existingThemeDetails || "");
+  state.currentJourney.status = "active";
+  persistSession();
+  emitChange();
+}
+
+function skipExplorerToReview() {
+  state.currentJourney.status = "active";
+  state.currentJourney.skippedExplorer = true;
+  state.currentJourney.selectedDoor = "theme_notes";
+  state.currentJourney.currentCandidates = [];
+  state.currentJourney.currentPrompt = null;
+  navigate("review");
+}
+
 function startNewJourney() {
   state.currentJourney = createEmptyJourney();
   state.currentJourney.vocabularyById = state.data.vocabularyById;
@@ -840,6 +1011,7 @@ function startNewJourney() {
 
 function chooseDoor(door) {
   state.currentJourney.status = "active";
+  state.currentJourney.skippedExplorer = false;
   state.currentJourney.selectedDoor = door;
   state.currentJourney.initialPrompt = chooseInitialPrompt(door);
 }
@@ -976,8 +1148,10 @@ async function loadCandidates() {
       ? weightedCoreLensInputs.inputs
       : buildCoreLensInputs(inputText);
     const microLensInputs = buildMicroLensInputs(inputText);
+    const baselineLensInputs = buildBaselineLensInputs();
     const lensEmbeddings = await embedInputMap(coreLensInputs, { retryLimit: 2 });
     const microLensEmbeddings = await embedInputMap(microLensInputs, { retryLimit: 2 });
+    const baselineLensEmbeddings = await embedInputMap(baselineLensInputs, { retryLimit: 2 });
 
     rankingResult = rankCandidatesByEmbedding({
       inputEmbedding: lensEmbeddings.direct,
@@ -986,6 +1160,7 @@ async function loadCandidates() {
         ? { entries: weightedCoreLensInputs.entries, embeddings: lensEmbeddings }
         : null,
       microLensEmbeddings,
+      baselineLensEmbeddings,
       vocabulary: state.data.vocabulary,
       journey: state.currentJourney,
       count: CANDIDATE_COUNT
@@ -1069,13 +1244,28 @@ async function loadResonanceOptions() {
   let rankingResult;
 
   try {
-    const inputEmbedding = await embedTextWithRetry(inputText, { retryLimit: 2 });
+    const weightedCoreLensInputs = buildWeightedCoreLensInputs(journeyForInput);
+    const coreLensInputs = Object.keys(weightedCoreLensInputs.inputs).length
+      ? weightedCoreLensInputs.inputs
+      : buildCoreLensInputs(inputText);
+    const microLensInputs = buildMicroLensInputs(inputText);
+    const baselineLensInputs = buildBaselineLensInputs();
+    const lensEmbeddings = await embedInputMap(coreLensInputs, { retryLimit: 2 });
+    const microLensEmbeddings = await embedInputMap(microLensInputs, { retryLimit: 2 });
+    const baselineLensEmbeddings = await embedInputMap(baselineLensInputs, { retryLimit: 2 });
+
     rankingResult = rankResonanceWordsByEmbedding({
-      inputEmbedding,
+      inputEmbedding: lensEmbeddings.direct,
+      lensEmbeddings,
+      weightedLensEmbeddings: Object.keys(weightedCoreLensInputs.inputs).length
+        ? { entries: weightedCoreLensInputs.entries, embeddings: lensEmbeddings }
+        : null,
+      microLensEmbeddings,
+      baselineLensEmbeddings,
       vocabulary: state.data.vocabulary,
       journey: state.currentJourney,
-      sets: RESONANCE_SETS,
-      perSet: RESONANCE_WORDS_PER_SET
+      sections: FINAL_WORD_SECTIONS,
+      perSection: FINAL_WORDS_PER_SECTION
     });
     state.embedding.modelStatus = getEmbeddingStatus().status;
     state.embedding.error = null;
@@ -1087,8 +1277,8 @@ async function loadResonanceOptions() {
       inputText,
       vocabulary: state.data.vocabulary,
       journey: state.currentJourney,
-      sets: RESONANCE_SETS,
-      perSet: RESONANCE_WORDS_PER_SET
+      sections: FINAL_WORD_SECTIONS,
+      perSection: FINAL_WORDS_PER_SECTION
     });
 
     rankingResult.debug = {
@@ -1220,6 +1410,7 @@ async function submitFollowupAnswer() {
 
 function saveTheme() {
   state.currentJourney.themeNameOverride = getFieldValue("theme-name", state.currentJourney.themeNameOverride || "");
+  state.currentJourney.themeNameIsEditing = false;
   state.currentJourney.userComments = getFieldValue("journey-comments", state.currentJourney.userComments || "");
   const themeCard = buildThemeCard(state.currentJourney, state.data.vocabularyById);
   const savedTheme = {

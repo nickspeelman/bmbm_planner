@@ -1,12 +1,21 @@
 import { DOOR_LABELS, SET_LABELS } from "./theme-data.js";
 
+const FINAL_WORD_SECTION_LABELS = {
+  direct: "Close to what you wrote",
+  image: "Images and details",
+  symbol: "Symbols and patterns",
+  scene: "Scenes and atmosphere",
+  second_chance: "Worth another look"
+};
+
 export function buildThemeCard(journey, vocabularyById) {
   const selectedWords = journey.selectedWordIds
     .map((id) => vocabularyById[id])
     .filter(Boolean);
 
+  const doorLabel = getDoorLabel(journey);
   const path = [
-    DOOR_LABELS[journey.selectedDoor] || journey.selectedDoor,
+    doorLabel,
     ...selectedWords.map((item) => getWordDisplay(item))
   ].filter(Boolean);
 
@@ -14,13 +23,16 @@ export function buildThemeCard(journey, vocabularyById) {
   const allSetGroups = groupWordsByAllSets(selectedWords);
   const resonanceWordsBySet = groupResonanceSelections(journey.resonanceSelections || {}, vocabularyById);
 
+  const existingThemeIdea = String(journey.existingThemeIdea || "").trim();
   const generatedThemeName = selectedWords.length
     ? selectedWords.map((item) => getWordDisplay(item)).join(" · ")
-    : DOOR_LABELS[journey.selectedDoor] || "Theme";
+    : getThemeIdeaTitle(existingThemeIdea) || doorLabel || "Theme";
 
   const workingThemeName = String(journey.themeNameOverride || "").trim() || generatedThemeName;
 
-  const notes = journey.responses.map((response) => ({
+  const notes = [
+    ...buildExistingThemeNotes(journey),
+    ...journey.responses.map((response) => ({
     type: response.type,
     responseRole: response.responseRole || null,
     door: response.door || null,
@@ -34,7 +46,8 @@ export function buildThemeCard(journey, vocabularyById) {
     promptId: response.promptId,
     promptText: response.promptText,
     answer: response.answer
-  }));
+  }))
+  ];
 
   const resonanceWords = resonanceWordsBySet.flatMap((group) => group.words.map((word) => ({
     ...word,
@@ -49,7 +62,12 @@ export function buildThemeCard(journey, vocabularyById) {
     workingThemeName,
     startingDoor: {
       id: journey.selectedDoor,
-      label: DOOR_LABELS[journey.selectedDoor] || journey.selectedDoor
+      label: doorLabel
+    },
+    existingTheme: {
+      idea: existingThemeIdea,
+      details: String(journey.existingThemeDetails || "").trim(),
+      skippedExplorer: Boolean(journey.skippedExplorer)
     },
     path,
     selectedWords: selectedWords.map((item) => ({
@@ -63,12 +81,12 @@ export function buildThemeCard(journey, vocabularyById) {
     })),
     strongestNotes: Object.entries(primarySetGroups).map(([set, words]) => ({
       set,
-      label: SET_LABELS[set] || set,
+      label: FINAL_WORD_SECTION_LABELS[set] || SET_LABELS[set] || set,
       words
     })),
     allSetNotes: Object.entries(allSetGroups).map(([set, words]) => ({
       set,
-      label: SET_LABELS[set] || set,
+      label: FINAL_WORD_SECTION_LABELS[set] || SET_LABELS[set] || set,
       words
     })),
     resonanceWords,
@@ -93,6 +111,61 @@ export function buildSubmissionObject({ savedThemes, selectedThemeIds, commentsF
     selectedThemeCount: selectedThemes.length,
     selectedThemes
   };
+}
+
+function getDoorLabel(journey) {
+  if (journey?.selectedDoor === "theme_notes") return "Theme notes";
+  return DOOR_LABELS[journey?.selectedDoor] || journey?.selectedDoor || "Theme";
+}
+
+function getThemeIdeaTitle(value) {
+  const normalized = String(value || "").replace(/\s+/g, " ").trim();
+  if (!normalized) return "";
+  return normalized.length > 80 ? `${normalized.slice(0, 77).trim()}…` : normalized;
+}
+
+function buildExistingThemeNotes(journey) {
+  const notes = [];
+  const idea = String(journey.existingThemeIdea || "").trim();
+  const details = String(journey.existingThemeDetails || "").trim();
+
+  if (idea) {
+    notes.push({
+      type: "pre_theme",
+      responseRole: "existing_theme_idea",
+      door: null,
+      wordId: null,
+      word: null,
+      display: null,
+      set: null,
+      frame: null,
+      contextText: null,
+      topicText: "Theme, idea, or direction",
+      promptId: "existing_theme_idea",
+      promptText: "Do you already have a theme, idea, or direction in mind?",
+      answer: idea
+    });
+  }
+
+  if (details) {
+    notes.push({
+      type: "pre_theme",
+      responseRole: "existing_theme_details",
+      door: null,
+      wordId: null,
+      word: null,
+      display: null,
+      set: null,
+      frame: null,
+      contextText: null,
+      topicText: "Notes for Michele",
+      promptId: "existing_theme_details",
+      promptText: "Anything Michele should know about it?",
+      answer: details
+    });
+  }
+
+  return notes;
 }
 
 function buildDeterministicSummary(selectedWords, primarySetGroups) {
@@ -154,7 +227,7 @@ function groupResonanceSelections(resonanceSelections, vocabularyById) {
 
   return Object.entries(groups).map(([set, words]) => ({
     set,
-    label: SET_LABELS[set] || set,
+    label: FINAL_WORD_SECTION_LABELS[set] || SET_LABELS[set] || set,
     words
   }));
 }
