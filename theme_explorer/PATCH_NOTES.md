@@ -1,38 +1,79 @@
-# Theme Explorer Patch Notes
+# Theme Explorer Visual Motif Final Patch
 
-## Changes in this patch
+This patch keeps the journey cue-picking logic from the previous best-lens version, but changes the final word screen into a dedicated visual motif pass.
 
-### Stronger attractor penalty
+## Journey cue picking
 
-- Raised `GENERIC_BASELINE_WEIGHT` from `0.45` to `0.75`.
-- Kept the existing specificity bonus so candidate words are rewarded when they fit the actual journey better than generic theme-language baselines.
-- Baseline lenses still include image/symbol/scene plus inner/meaning language, so broad symbolic attractors should need a stronger journey-specific reason to appear.
+- Still uses cumulative labeled journey text.
+- Still uses best corrected core lens + light second-lens support.
+- Still uses micro-lens discovery, generic baseline correction, specificity bonus, and diversity selection.
 
-### Clearer optional-theme entry flow
+## Final visual motif mode
 
-- The intro screen now makes it explicit that a client does not need a theme at all.
-- The first screen still only explains that themes are optional and does not lead with the Theme Explorer.
-- The second screen asks the two open-ended questions, and makes clear they can answer either, both, or neither.
-- The third screen offers either word prompts or skipping the section.
+The final word screen now uses its own motif-oriented embedding inputs instead of the broad journey-cue lenses.
 
-### Pre-explorer answers are no longer shown in explorer result cards
+### Final motif lenses
 
-- The two open-ended pre-explorer responses are still saved and exported.
-- They are hidden from the Theme Explorer result/review card.
-- They now appear on the saved-themes selection screen, where the client is deciding what to submit.
+- `direct`: plain relevance to the cumulative text
+- `visual`: visual motif, image, shape, object, color, texture
+- `symbol`: symbol, motif, emblem, recurring image
+- `material`: material, surface, pattern, detail, ornament
+- `scene`: place, atmosphere, scene, visual detail
 
-### Final words are grouped into lens buckets
+### Final micro lenses
 
-- Replaced the two-section final word picker with lens-based buckets:
-  - Close to what you wrote
-  - Images and details
-  - Symbols and patterns
-  - Scenes and atmosphere
-  - Worth another look
-- The first four buckets only use words that have not appeared before.
-- “Worth another look” is reserved for words shown earlier but not selected.
-- Each bucket is built from candidates whose strongest scoring lens matches that bucket, with diversity filtering still applied.
+The final candidate pool is discovered with motif-specific micro lenses, including:
 
-### Validation
+- image
+- object
+- place
+- shape
+- pattern
+- texture
+- movement
+- color
+- light
+- material
+- surface
+- symbol
+- motif
+- emblem
+- atmosphere
 
-- Ran `node --check` against all JavaScript files.
+### Final baseline correction
+
+The final baseline is also motif-specific. It penalizes words that are generically pretty, symbolic, abstract, or theme-like unless they are especially relevant to the current journey.
+
+Additional abstract penalty is applied for candidates close to broad abstract/emotion/value language, so the final list should lean more toward visual motifs than general theme concepts.
+
+## Final bucket changes
+
+The final screen now uses visual motif buckets:
+
+- Images and objects
+- Shapes, patterns, and textures
+- Colors, materials, and light
+- Symbols and motifs
+- Scenes and atmosphere
+- Worth another look
+
+The first five buckets prioritize new words. `Worth another look` is still reserved for words that appeared earlier but were not selected.
+
+## Final scoring blend
+
+Final word scoring now blends:
+
+- motif-text score: `0.55`
+- selected cue embedding score: `0.25`
+- direct relevance to cumulative text: `0.20`
+
+The selected cue score still uses both average selected-cue similarity and max selected-cue similarity.
+
+## Validation
+
+Ran:
+
+```bash
+node --check js/theme-ranking.js
+node --check js/theme-explorer.js
+```

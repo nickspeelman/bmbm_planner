@@ -1640,7 +1640,7 @@ function renderStyleExplorerReview() {
     selectedWords ? ['Selected words', selectedWords] : null,
     feedback?.rating ? ['Client rating', `${feedback.rating} / 5 stars`] : null,
     feedback?.comment ? ['Client style note', feedback.comment] : null,
-    ['Style Quiz Status', styleData.styleExplorerStatus || 'started']
+    ['Fingerprint Status', styleData.styleExplorerStatus || 'started']
   ]));
 }
 

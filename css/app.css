@@ -2058,3 +2058,422 @@ h2 {
 .style-card .screen-actions {
   margin-top: 18px;
 }
+
+/* UX pass: clearer question/chip hierarchy in the main planner */
+#ear-planner .form-card .question-block,
+#ear-planner .style-card .question-block {
+  margin-top: 18px;
+  padding: 15px;
+  border: 1px solid rgba(214, 190, 176, 0.86);
+  border-radius: 22px;
+  background: rgba(255, 248, 243, 0.72);
+}
+
+#ear-planner .form-card .question-block + .question-block,
+#ear-planner .style-card .question-block + .question-block {
+  margin-top: 14px;
+}
+
+#ear-planner .form-card .question-block h2,
+#ear-planner .style-card .question-block h2 {
+  margin: 0 0 14px;
+  color: var(--accent-dark);
+  font-size: 1rem;
+  font-weight: 860;
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+}
+
+#ear-planner .form-card .soft-chip-grid,
+#ear-planner .style-card .soft-chip-grid {
+  gap: 10px;
+}
+
+#ear-planner .form-card .soft-chip,
+#ear-planner .form-card .soft-choice,
+#ear-planner .style-card .soft-chip,
+#ear-planner .style-card .soft-choice {
+  border-color: rgba(197, 169, 154, 0.9);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 2px 8px rgba(83, 58, 46, 0.04);
+}
+
+#ear-planner .form-card .soft-chip.is-selected,
+#ear-planner .form-card .soft-choice.is-selected,
+#ear-planner .style-card .soft-chip.is-selected,
+#ear-planner .style-card .soft-choice.is-selected {
+  background: #f7e5dc;
+  border-color: rgba(154, 107, 88, 0.82);
+  box-shadow: 0 7px 18px rgba(83, 58, 46, 0.10);
+}
+
+
+/* Material swatches for the integrated style flow */
+#ear-planner .metal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+#ear-planner .metal-swatch {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(83, 58, 46, 0.18);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.62), 0 1px 2px rgba(83, 58, 46, 0.08);
+}
+
+#ear-planner .metal-swatch.is-blank {
+  background: transparent;
+  border-style: dashed;
+  box-shadow: none;
+}
+
+
+#ear-planner .gem-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+#ear-planner .gem-swatch {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(83, 58, 46, 0.16);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.7), 0 1px 2px rgba(83, 58, 46, 0.08);
+}
+
+#ear-planner .gem-swatch.is-diamond,
+#ear-planner .gem-swatch.is-cz {
+  background: linear-gradient(135deg, #ffffff 0%, #eef6f8 38%, #cfdde2 100%);
+}
+
+#ear-planner .gem-swatch.is-opal {
+  background: linear-gradient(135deg, #fbf7e8 0%, #dff2ef 34%, #f3d7e8 67%, #d9e6ff 100%);
+}
+
+#ear-planner .gem-swatch.is-pearl {
+  background: linear-gradient(135deg, #fff9ef 0%, #efe0cf 100%);
+}
+
+#ear-planner .gem-swatch.is-colorful {
+  background: linear-gradient(135deg, #f5a3b8 0%, #b6d982 50%, #8db9e8 100%);
+}
+
+#ear-planner .gem-swatch.is-none,
+#ear-planner .gem-swatch.is-blank {
+  background: transparent;
+  box-shadow: none;
+}
+
+#ear-planner .gem-swatch.is-none {
+  border-style: solid;
+}
+
+#ear-planner .gem-swatch.is-blank {
+  border-style: dashed;
+}
+
+/* Visual color palettes for the integrated style flow */
+#ear-planner .color-palette-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+#ear-planner .color-chip {
+  min-height: 64px;
+  width: 100%;
+  border: 1px solid rgba(197, 169, 154, 0.9);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--text);
+  border-radius: 18px;
+  padding: 10px;
+  font-weight: 780;
+  cursor: pointer;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(83, 58, 46, 0.04);
+  transition: transform 160ms ease, border 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+#ear-planner .color-chip:active {
+  transform: scale(0.985);
+}
+
+#ear-planner .color-chip.is-selected {
+  background: #f7e5dc;
+  border-color: rgba(154, 107, 88, 0.82);
+  color: var(--accent-dark);
+  box-shadow: 0 7px 18px rgba(83, 58, 46, 0.10);
+}
+
+#ear-planner .palette-swatch {
+  height: 42px;
+  border: 1px solid rgba(83, 58, 46, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+#ear-planner .palette-swatch.is-open,
+#ear-planner .palette-swatch.is-blank {
+  grid-template-columns: 1fr;
+  border-style: dashed;
+  box-shadow: none;
+  place-items: center;
+}
+
+#ear-planner .palette-swatch.is-open {
+  background: rgba(255, 255, 255, 0.74);
+  border-color: rgba(154, 107, 88, 0.58);
+}
+
+#ear-planner .palette-swatch.is-blank {
+  background: transparent;
+  border-color: rgba(197, 169, 154, 0.72);
+}
+
+#ear-planner .palette-swatch span {
+  display: block;
+}
+
+#ear-planner .palette-swatch .palette-special-mark {
+  display: grid;
+  place-items: center;
+  color: rgba(83, 58, 46, 0.72);
+  font-size: 1.45rem;
+  font-weight: 920;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+#ear-planner .palette-swatch.is-open .palette-special-mark {
+  font-size: 1.7rem;
+  transform: translateY(-2px);
+}
+
+#ear-planner .palette-swatch.is-blank .palette-special-mark {
+  font-size: 1.35rem;
+  color: rgba(83, 58, 46, 0.56);
+}
+
+#ear-planner .color-chip-label {
+  line-height: 1.15;
+}
+
+@media (min-width: 520px) {
+  #ear-planner .color-palette-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  #ear-planner .color-chip {
+    grid-template-columns: 74px 1fr;
+    gap: 10px;
+  }
+
+  #ear-planner .palette-swatch {
+    height: 38px;
+  }
+}
+
+/* Integrated Style Fingerprint refinements */
+#ear-planner .fingerprint-title-card {
+  text-align: center;
+}
+
+#ear-planner .fingerprint-title-card .subtext,
+#ear-planner .fingerprint-title-card .mini-note {
+  text-align: left;
+}
+
+#ear-planner .fingerprint-visual {
+  width: min(148px, 44vw);
+  margin: 4px auto 18px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+#ear-planner .fingerprint-visual svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+#ear-planner .fingerprint-ridge {
+  fill: none;
+  stroke: rgba(154, 107, 88, 0.2);
+  stroke-width: 4.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 220ms ease, stroke-width 220ms ease, opacity 220ms ease;
+}
+
+#ear-planner .fingerprint-ridge.is-filled {
+  stroke: rgba(154, 107, 88, 0.84);
+  stroke-width: 4.8;
+}
+
+#ear-planner .fingerprint-insight strong {
+  color: var(--accent-dark);
+  font-weight: 900;
+}
+
+#ear-planner .vocab-either-or-card {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#ear-planner .vocab-pair-choice {
+  min-height: 118px;
+  border: 1px solid rgba(233, 217, 207, 0.95);
+  background: rgba(255, 255, 255, 0.64);
+  color: var(--text);
+  border-radius: 24px;
+  padding: 18px 12px;
+  font-size: 1.08rem;
+  font-weight: 850;
+  text-align: center;
+  cursor: pointer;
+  line-height: 1.12;
+  box-shadow: 0 6px 18px rgba(83, 58, 46, 0.05);
+  transition: transform 160ms ease, border 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+#ear-planner .vocab-pair-choice:active {
+  transform: scale(0.985);
+}
+
+#ear-planner .vocab-pair-choice.is-selected {
+  background: #fff2ea;
+  border-color: rgba(154, 107, 88, 0.72);
+  color: var(--accent-dark);
+  box-shadow: 0 12px 24px rgba(83, 58, 46, 0.11);
+}
+
+@media (max-width: 420px) {
+  #ear-planner .fingerprint-visual {
+    width: min(130px, 48vw);
+    margin-bottom: 14px;
+  }
+
+  #ear-planner .vocab-either-or-card {
+    gap: 8px;
+  }
+
+  #ear-planner .vocab-pair-choice {
+    min-height: 104px;
+    padding: 15px 8px;
+    font-size: 0.98rem;
+  }
+}
+
+
+#ear-planner .compact-title-card {
+  padding-top: 28px;
+}
+
+#ear-planner .compact-title-card h1 {
+  margin-bottom: 8px;
+}
+
+#ear-planner .compact-title-card .compact-body {
+  max-width: 30ch;
+  margin: 0 auto 10px;
+  text-align: center;
+}
+
+#ear-planner .compact-title-card .fingerprint-insight-inline {
+  margin: 0 0 16px;
+  text-align: center;
+  color: var(--accent-dark);
+  font-weight: 700;
+  font-size: 0.96rem;
+}
+
+#ear-planner .compact-title-card .screen-actions {
+  margin-top: 10px;
+}
+
+#ear-planner .compact-title-card .quiz-exit-zone {
+  margin-top: 10px;
+}
+
+#ear-planner .fingerprint-visual {
+  width: min(128px, 35vw);
+  margin: 2px auto 14px;
+}
+
+#ear-planner .fingerprint-ridge {
+  fill: none;
+  stroke: rgba(154, 107, 88, 0.17);
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#ear-planner .fingerprint-ridge.is-filled {
+  stroke: rgba(154, 107, 88, 0.86);
+  stroke-width: 2.05;
+}
+
+@media (max-width: 420px) {
+  #ear-planner .fingerprint-visual {
+    width: min(114px, 39vw);
+  }
+
+  #ear-planner .compact-title-card .compact-body {
+    max-width: 26ch;
+  }
+}
+
+
+/* Style fingerprint asset: use the fixed thumbprint image instead of hand-drawn ridge paths. */
+#ear-planner .fingerprint-asset-visual {
+  position: relative;
+  width: min(112px, 32vw);
+  aspect-ratio: 408 / 514;
+  margin: 2px auto 14px;
+  display: block;
+}
+
+#ear-planner .fingerprint-asset {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+#ear-planner .fingerprint-asset-base {
+  opacity: 0.13;
+}
+
+#ear-planner .fingerprint-asset-layer {
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+#ear-planner .fingerprint-asset-layer.is-filled {
+  opacity: 0.74;
+}
+
+@media (max-width: 420px) {
+  #ear-planner .fingerprint-asset-visual {
+    width: min(102px, 34vw);
+  }
+}

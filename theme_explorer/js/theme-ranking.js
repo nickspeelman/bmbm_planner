@@ -29,12 +29,18 @@ const CORE_EMBEDDING_LENSES = [
   }
 ];
 
+const SECOND_BEST_LENS_WEIGHT = 0.20;
+const FINAL_TEXT_SCORE_WEIGHT = 0.55;
+const FINAL_SELECTED_CUE_WEIGHT = 0.25;
+const FINAL_DIRECT_RELEVANCE_WEIGHT = 0.20;
+const FINAL_GENERIC_BASELINE_WEIGHT = 5;
+const FINAL_SPECIFICITY_BONUS_WEIGHT = 0.75;
+const FINAL_ABSTRACT_PENALTY_WEIGHT = 0.25;
+
+// Kept as an export for older integration code, but exploration scoring now uses
+// one cumulative labeled text block instead of independently weighted text parts.
 const JOURNEY_PART_WEIGHTS = {
-  startingPoint: 0.30,
-  initialDetails: 0.20,
-  latestAnswer: 0.30,
-  earlierAnswers: 0.12,
-  selectedWords: 0.08
+  cumulativeText: 1
 };
 
 const MICRO_EMBEDDING_LENSES = [
@@ -62,114 +68,152 @@ const BASELINE_EMBEDDING_LENSES = [
   { key: "meaning", weight: 0.10, text: "meaningful, personal, important, special, significant" }
 ];
 
+const FINAL_MOTIF_LENSES = [
+  {
+    key: "direct",
+    weight: 0.20,
+    build: (text) => text
+  },
+  {
+    key: "visual",
+    weight: 0.35,
+    build: (text) => `visual motif, image, shape, object, color, texture: ${text}`
+  },
+  {
+    key: "symbol",
+    weight: 0.30,
+    build: (text) => `symbol, motif, emblem, recurring image: ${text}`
+  },
+  {
+    key: "material",
+    weight: 0.20,
+    build: (text) => `material, surface, pattern, detail, ornament: ${text}`
+  },
+  {
+    key: "scene",
+    weight: 0.15,
+    build: (text) => `place, atmosphere, scene, visual detail: ${text}`
+  }
+];
+
+const FINAL_MOTIF_MICRO_LENSES = [
+  { key: "image", family: "image", build: (text) => `image: ${text}` },
+  { key: "object", family: "image", build: (text) => `object: ${text}` },
+  { key: "place", family: "scene", build: (text) => `place: ${text}` },
+  { key: "shape", family: "form", build: (text) => `shape: ${text}` },
+  { key: "pattern", family: "form", build: (text) => `pattern: ${text}` },
+  { key: "texture", family: "form", build: (text) => `texture: ${text}` },
+  { key: "movement", family: "form", build: (text) => `movement: ${text}` },
+  { key: "color", family: "material", build: (text) => `color: ${text}` },
+  { key: "light", family: "material", build: (text) => `light: ${text}` },
+  { key: "material", family: "material", build: (text) => `material: ${text}` },
+  { key: "surface", family: "material", build: (text) => `surface: ${text}` },
+  { key: "symbol", family: "symbol", build: (text) => `symbol: ${text}` },
+  { key: "motif", family: "symbol", build: (text) => `motif: ${text}` },
+  { key: "emblem", family: "symbol", build: (text) => `emblem: ${text}` },
+  { key: "atmosphere", family: "scene", build: (text) => `atmosphere: ${text}` }
+];
+
+const FINAL_MOTIF_BASELINE_LENSES = [
+  { key: "visual", weight: 0.35, text: "beautiful image, visual motif, object, shape, color, texture" },
+  { key: "symbol", weight: 0.30, text: "symbol, motif, emblem, metaphor, meaningful image" },
+  { key: "material", weight: 0.20, text: "beautiful, delicate, elegant, poetic, ornament, jewelry detail, material, surface, pattern" },
+  { key: "scene", weight: 0.15, text: "place, atmosphere, scene, memory, visual detail" },
+  { key: "abstract", weight: 0, text: "abstract feeling, emotion, value, idea, concept, belief, meaning" }
+];
+
 const MICRO_LENS_TOP_N = 10;
 const CORE_CANDIDATE_POOL_SIZE = 110;
-const LITERAL_TEXT_PENALTY = 0.05;
-const GENERIC_BASELINE_WEIGHT = 3;
-const SPECIFICITY_BONUS_WEIGHT = 0.70;
-const DIVERSITY_WEIGHT = 0.25;
+const LITERAL_TEXT_PENALTY = 0.20;
+const GENERIC_BASELINE_WEIGHT = 0.75;
+const SPECIFICITY_BONUS_WEIGHT = 0.20;
+const DIVERSITY_WEIGHT = 0.22;
 const SAME_MICRO_LENS_PENALTY = 0.12;
 const SAME_MICRO_FAMILY_PENALTY = 0.08;
-const NEAR_DUPLICATE_THRESHOLD = 0.70;
+const NEAR_DUPLICATE_THRESHOLD = 0.82;
 
 // Kept only for older saved sessions/debug helpers that may still reference answer-match code paths.
 const EXACT_ANSWER_MATCH_BOOST = 0;
 const CLOSE_ANSWER_MATCH_BOOST = 0;
 const MATCH_SIMILARITY_THRESHOLD = 0.92;
 
-export { CORE_EMBEDDING_LENSES, MICRO_EMBEDDING_LENSES, BASELINE_EMBEDDING_LENSES, JOURNEY_PART_WEIGHTS };
+export { CORE_EMBEDDING_LENSES, MICRO_EMBEDDING_LENSES, BASELINE_EMBEDDING_LENSES, FINAL_MOTIF_LENSES, FINAL_MOTIF_MICRO_LENSES, FINAL_MOTIF_BASELINE_LENSES, JOURNEY_PART_WEIGHTS };
 
 export function buildEmbeddingInput(journey) {
-  return buildJourneyParts(journey)
-    .map((part) => `${part.label}: ${part.text}`)
-    .filter(Boolean)
-    .join("\n\n");
+  return buildCumulativeJourneyText(journey);
 }
 
-export function buildJourneyParts(journey) {
-  const parts = [];
+export function buildCumulativeJourneyText(journey) {
+  const lines = [];
+  const doorLabel = journey.selectedDoor || journey.initialDoor || "";
+  const selectedWordDisplays = getSelectedWordDisplays(journey);
+  const followups = getFollowupResponseEntries(journey);
 
-  const selectedWords = getSelectedWordDisplays(journey);
-  const followupAnswers = getFollowupAnswers(journey);
-  const latestFollowupAnswer = followupAnswers.at(-1) || "";
-  const earlierFollowupAnswers = followupAnswers.slice(0, -1);
+  if (doorLabel) {
+    lines.push(`Exploration type: ${doorLabel}`);
+  }
 
-  const startingPoint = [
-    journey.selectedDoor ? `Door: ${journey.selectedDoor}` : "",
-    journey.initialShortAnswer ? `Short description: ${journey.initialShortAnswer}` : ""
-  ].filter(Boolean).join("\n");
-
-  if (startingPoint) {
-    parts.push({
-      key: "startingPoint",
-      label: "Starting point",
-      weight: JOURNEY_PART_WEIGHTS.startingPoint,
-      text: startingPoint
-    });
+  if (journey.initialShortAnswer) {
+    lines.push(`Starting point: ${journey.initialShortAnswer}`);
   }
 
   const initialDetails = [
     journey.initialDetailAnswer || "",
     journey.initialAnswer && !journey.initialShortAnswer && !journey.initialDetailAnswer ? journey.initialAnswer : ""
-  ].filter(Boolean).join("\n");
+  ].filter(Boolean);
 
-  if (initialDetails) {
-    parts.push({
-      key: "initialDetails",
-      label: "Initial details",
-      weight: JOURNEY_PART_WEIGHTS.initialDetails,
-      text: initialDetails
-    });
+  if (initialDetails.length) {
+    lines.push("");
+    lines.push("Client answers:");
+    lines.push(...initialDetails);
   }
 
-  if (latestFollowupAnswer) {
-    parts.push({
-      key: "latestAnswer",
-      label: "Latest answer",
-      weight: JOURNEY_PART_WEIGHTS.latestAnswer,
-      text: latestFollowupAnswer
-    });
+  if (selectedWordDisplays.length) {
+    lines.push("");
+    lines.push(`Path so far: ${selectedWordDisplays.join(" → ")}`);
   }
 
-  if (earlierFollowupAnswers.length) {
-    parts.push({
-      key: "earlierAnswers",
-      label: "Earlier answers",
-      weight: JOURNEY_PART_WEIGHTS.earlierAnswers,
-      text: earlierFollowupAnswers.join("\n")
-    });
+  for (const entry of followups) {
+    if (entry.wordDisplay) {
+      lines.push(`After “${entry.wordDisplay}”: ${entry.answer}`);
+    } else {
+      lines.push(`Client answer: ${entry.answer}`);
+    }
   }
 
-  if (selectedWords.length) {
-    parts.push({
-      key: "selectedWords",
-      label: "Words chosen so far",
-      weight: JOURNEY_PART_WEIGHTS.selectedWords,
-      text: selectedWords.join(", ")
-    });
-  }
+  return lines.filter((line) => line !== null && line !== undefined).join("\n").trim();
+}
 
-  return normalizeJourneyPartWeights(parts);
+export function buildJourneyParts(journey) {
+  const text = buildCumulativeJourneyText(journey);
+  if (!text) return [];
+
+  return [{
+    key: "cumulativeText",
+    label: "Cumulative journey text",
+    weight: 1,
+    text
+  }];
 }
 
 export function buildWeightedCoreLensInputs(journey) {
+  const text = buildCumulativeJourneyText(journey);
   const entries = [];
   const inputs = {};
 
-  for (const part of buildJourneyParts(journey)) {
-    for (const lens of CORE_EMBEDDING_LENSES) {
-      const key = `${part.key}__${lens.key}`;
-      inputs[key] = lens.build(part.text);
-      entries.push({
-        key,
-        partKey: part.key,
-        partLabel: part.label,
-        partWeight: part.weight,
-        lensKey: lens.key,
-        lensWeight: lens.weight,
-        weight: part.weight * lens.weight
-      });
-    }
+  if (!text) return { inputs, entries };
+
+  for (const lens of CORE_EMBEDDING_LENSES) {
+    inputs[lens.key] = lens.build(text);
+    entries.push({
+      key: lens.key,
+      partKey: "cumulativeText",
+      partLabel: "Cumulative journey text",
+      partWeight: 1,
+      lensKey: lens.key,
+      lensWeight: lens.weight,
+      weight: lens.weight
+    });
   }
 
   return { inputs, entries };
@@ -182,9 +226,22 @@ function getSelectedWordDisplays(journey) {
 }
 
 function getFollowupAnswers(journey) {
+  return getFollowupResponseEntries(journey).map((entry) => entry.answer);
+}
+
+function getFollowupResponseEntries(journey) {
+  const vocabularyById = journey.vocabularyById || {};
   return (journey.responses || [])
     .filter((response) => response.type === "followup" && response.answer)
-    .map((response) => response.answer);
+    .map((response) => {
+      const wordId = response.wordId || response.prompt?.wordId || response.selectedWordId;
+      const word = wordId ? vocabularyById[wordId] : null;
+      return {
+        answer: response.answer,
+        wordId,
+        wordDisplay: word?.display || word?.word || response.display || response.word || ""
+      };
+    });
 }
 
 function normalizeJourneyPartWeights(parts) {
@@ -212,6 +269,24 @@ export function buildMicroLensInputs(inputText) {
 export function buildBaselineLensInputs() {
   return Object.fromEntries(
     BASELINE_EMBEDDING_LENSES.map((lens) => [lens.key, lens.text])
+  );
+}
+
+export function buildFinalMotifCoreLensInputs(inputText) {
+  return Object.fromEntries(
+    FINAL_MOTIF_LENSES.map((lens) => [lens.key, lens.build(inputText)])
+  );
+}
+
+export function buildFinalMotifMicroLensInputs(inputText) {
+  return Object.fromEntries(
+    FINAL_MOTIF_MICRO_LENSES.map((lens) => [lens.key, lens.build(inputText)])
+  );
+}
+
+export function buildFinalMotifBaselineLensInputs() {
+  return Object.fromEntries(
+    FINAL_MOTIF_BASELINE_LENSES.map((lens) => [lens.key, lens.text])
   );
 }
 
@@ -245,8 +320,8 @@ export function rankCandidatesByEmbedding({ inputEmbedding, lensEmbeddings = nul
     candidates: finalCandidates,
     debug: {
       method: weightedEntries.length
-        ? (microLensEmbeddings ? "weighted_core_lenses_micro_discovery_embedding" : "weighted_core_lenses_embedding")
-        : (microLensEmbeddings ? "core_lenses_micro_discovery_embedding" : "core_lenses_embedding"),
+        ? (microLensEmbeddings ? "best_core_lens_micro_discovery_embedding" : "best_core_lens_embedding")
+        : (microLensEmbeddings ? "best_core_lens_micro_discovery_embedding" : "best_core_lens_embedding"),
       excludedWordIds: Array.from(excludedIds),
       lenses: CORE_EMBEDDING_LENSES.map(({ key, weight }) => ({ key, weight })),
       journeyPartWeights: Array.from(new Map(
@@ -260,6 +335,7 @@ export function rankCandidatesByEmbedding({ inputEmbedding, lensEmbeddings = nul
       baselineLenses: baselineLensEmbeddings ? BASELINE_EMBEDDING_LENSES.map(({ key, weight }) => ({ key, weight })) : [],
       genericBaselineWeight: GENERIC_BASELINE_WEIGHT,
       specificityBonusWeight: SPECIFICITY_BONUS_WEIGHT,
+      secondBestLensWeight: SECOND_BEST_LENS_WEIGHT,
       topRawCandidates: scoredAll.slice(0, 30).map(toDebugCandidate),
       candidatePoolSize: pool.length,
       finalCandidates: finalCandidates.map(toDebugCandidate)
@@ -336,12 +412,17 @@ export function rankResonanceWordsByEmbedding({ inputEmbedding, lensEmbeddings =
   const weightedEntries = buildWeightedEmbeddingEntries(weightedLensEmbeddings);
   const coreEmbeddings = lensEmbeddings || { direct: inputEmbedding };
 
+  const selectedCueEmbeddings = getSelectedCueEmbeddings(journey);
+  const scoringEmbeddings = sections ? coreEmbeddings : coreEmbeddings;
   const scoredAll = vocabulary
     .filter((item) => item.embedding)
-    .map((item) => weightedEntries.length
-      ? scoreCandidateWithWeightedCoreLenses(item, weightedEntries, journeyText, baselineLensEmbeddings)
-      : scoreCandidateWithCoreLenses(item, coreEmbeddings, journeyText, baselineLensEmbeddings)
+    .map((item) => sections
+      ? scoreCandidateWithFinalMotifLenses(item, scoringEmbeddings, journeyText, baselineLensEmbeddings)
+      : (weightedEntries.length
+        ? scoreCandidateWithWeightedCoreLenses(item, weightedEntries, journeyText, baselineLensEmbeddings)
+        : scoreCandidateWithCoreLenses(item, coreEmbeddings, journeyText, baselineLensEmbeddings))
     )
+    .map((item) => sections ? applyFinalSelectedCueScore(item, selectedCueEmbeddings) : item)
     .sort((a, b) => b.score - a.score);
 
   if (sections) {
@@ -354,14 +435,15 @@ export function rankResonanceWordsByEmbedding({ inputEmbedding, lensEmbeddings =
       scoredAll,
       microLensEmbeddings,
       excludedIds,
-      historyWords
+      historyWords,
+      microLensDefinitions: sections ? FINAL_MOTIF_MICRO_LENSES : MICRO_EMBEDDING_LENSES
     });
 
     return buildFinalWordSections({
       scoredCandidates: pool,
       journey,
       perSection,
-      method: "weighted_core_lenses_micro_discovery_embedding"
+      method: sections ? "final_visual_motif_micro_discovery_embedding" : "best_core_lens_micro_discovery_embedding"
     });
   }
 
@@ -479,60 +561,117 @@ function buildWeightedEmbeddingEntries(weightedLensEmbeddings) {
 }
 
 function scoreCandidateWithWeightedCoreLenses(item, weightedEntries, journeyText, baselineLensEmbeddings = null) {
-  let baseScore = 0;
   const lensScores = {};
   const journeyPartScores = {};
 
   for (const entry of weightedEntries) {
     const score = dotProduct(item.embedding, entry.embedding);
-    baseScore += entry.weight * score;
-
-    lensScores[entry.lensKey] = (lensScores[entry.lensKey] || 0) + (entry.partWeight * score);
+    lensScores[entry.lensKey] = score;
     journeyPartScores[entry.partKey] = (journeyPartScores[entry.partKey] || 0) + (entry.lensWeight * score);
   }
 
-  const literalPenalty = appearsInClientText(item, journeyText) ? LITERAL_TEXT_PENALTY : 0;
-  const baselineScore = scoreCandidateAgainstBaseline(item, baselineLensEmbeddings);
-  const specificityBonus = baselineLensEmbeddings ? (baseScore - baselineScore) * SPECIFICITY_BONUS_WEIGHT : 0;
-  const baselinePenalty = baselineScore * GENERIC_BASELINE_WEIGHT;
-  const score = baseScore + specificityBonus - literalPenalty - baselinePenalty;
-
-  return {
-    ...item,
-    score,
-    baseScore,
-    literalPenalty,
-    baselineScore,
-    baselinePenalty,
-    specificityBonus,
+  return finalizeLensBasedCandidateScore({
+    item,
     lensScores,
     journeyPartScores,
-    rankingMethod: "weighted_core_lens_embedding"
-  };
+    journeyText,
+    baselineLensEmbeddings,
+    rankingMethod: "best_core_lens_embedding"
+  });
 }
 
 function scoreCandidateWithCoreLenses(item, coreEmbeddings, journeyText, baselineLensEmbeddings = null) {
-  let baseScore = 0;
   const lensScores = {};
 
   for (const lens of CORE_EMBEDDING_LENSES) {
     const embedding = coreEmbeddings[lens.key];
     if (!embedding) continue;
-    const lensScore = dotProduct(item.embedding, embedding);
-    lensScores[lens.key] = lensScore;
-    baseScore += lens.weight * lensScore;
+    lensScores[lens.key] = dotProduct(item.embedding, embedding);
   }
 
   if (!Object.keys(lensScores).length && coreEmbeddings.direct) {
-    baseScore = dotProduct(item.embedding, coreEmbeddings.direct);
-    lensScores.direct = baseScore;
+    lensScores.direct = dotProduct(item.embedding, coreEmbeddings.direct);
   }
 
+  return finalizeLensBasedCandidateScore({
+    item,
+    lensScores,
+    journeyPartScores: {},
+    journeyText,
+    baselineLensEmbeddings,
+    rankingMethod: "best_core_lens_embedding"
+  });
+}
+
+function scoreCandidateWithFinalMotifLenses(item, motifEmbeddings, journeyText, baselineLensEmbeddings = null) {
+  const lensScores = {};
+
+  for (const lens of FINAL_MOTIF_LENSES) {
+    const embedding = motifEmbeddings[lens.key];
+    if (!embedding) continue;
+    lensScores[lens.key] = dotProduct(item.embedding, embedding);
+  }
+
+  return finalizeLensBasedCandidateScore({
+    item,
+    lensScores,
+    journeyPartScores: {},
+    journeyText,
+    baselineLensEmbeddings,
+    rankingMethod: "final_visual_motif_embedding",
+    genericBaselineWeight: FINAL_GENERIC_BASELINE_WEIGHT,
+    specificityBonusWeight: FINAL_SPECIFICITY_BONUS_WEIGHT,
+    abstractPenaltyWeight: FINAL_ABSTRACT_PENALTY_WEIGHT
+  });
+}
+
+function finalizeLensBasedCandidateScore({
+  item,
+  lensScores,
+  journeyPartScores,
+  journeyText,
+  baselineLensEmbeddings,
+  rankingMethod,
+  genericBaselineWeight = GENERIC_BASELINE_WEIGHT,
+  specificityBonusWeight = SPECIFICITY_BONUS_WEIGHT,
+  abstractPenaltyWeight = 0
+}) {
+  const correctedLensScores = {};
+  const baselineLensScores = {};
+  const rawLensEntries = Object.entries(lensScores)
+    .filter(([, value]) => Number.isFinite(value));
+
+  for (const [lensKey, journeyScore] of rawLensEntries) {
+    const baselineScore = lensKey === "direct"
+      ? 0
+      : scoreCandidateAgainstBaselineLens(item, baselineLensEmbeddings, lensKey);
+    const positiveSpecificity = Math.max(0, journeyScore - baselineScore);
+    const correctedScore = journeyScore
+      - (genericBaselineWeight * baselineScore)
+      + (specificityBonusWeight * positiveSpecificity);
+
+    correctedLensScores[lensKey] = correctedScore;
+    baselineLensScores[lensKey] = baselineScore;
+  }
+
+  const sortedLensEntries = Object.entries(correctedLensScores)
+    .filter(([, value]) => Number.isFinite(value))
+    .sort((a, b) => b[1] - a[1]);
+
+  const bestLens = sortedLensEntries[0] || ["direct", -Infinity];
+  const secondLens = sortedLensEntries[1] || [null, 0];
   const literalPenalty = appearsInClientText(item, journeyText) ? LITERAL_TEXT_PENALTY : 0;
-  const baselineScore = scoreCandidateAgainstBaseline(item, baselineLensEmbeddings);
-  const specificityBonus = baselineLensEmbeddings ? (baseScore - baselineScore) * SPECIFICITY_BONUS_WEIGHT : 0;
-  const baselinePenalty = baselineScore * GENERIC_BASELINE_WEIGHT;
-  const score = baseScore + specificityBonus - literalPenalty - baselinePenalty;
+  const baselineScore = bestLens[0] ? (baselineLensScores[bestLens[0]] || 0) : 0;
+  const baselinePenalty = baselineScore * genericBaselineWeight;
+  const specificityBonus = bestLens[0]
+    ? specificityBonusWeight * Math.max(0, (lensScores[bestLens[0]] || 0) - baselineScore)
+    : 0;
+  const abstractBaselineScore = abstractPenaltyWeight
+    ? scoreCandidateAgainstBaselineLens(item, baselineLensEmbeddings, "abstract")
+    : 0;
+  const abstractPenalty = abstractBaselineScore * abstractPenaltyWeight;
+  const baseScore = bestLens[1] + (SECOND_BEST_LENS_WEIGHT * secondLens[1]);
+  const score = baseScore - literalPenalty - abstractPenalty;
 
   return {
     ...item,
@@ -542,9 +681,25 @@ function scoreCandidateWithCoreLenses(item, coreEmbeddings, journeyText, baselin
     baselineScore,
     baselinePenalty,
     specificityBonus,
+    abstractBaselineScore,
+    abstractPenalty,
     lensScores,
-    rankingMethod: "core_lens_embedding"
+    correctedLensScores,
+    baselineLensScores,
+    bestCoreLens: bestLens[0],
+    bestCoreLensScore: bestLens[1],
+    secondCoreLens: secondLens[0],
+    secondCoreLensScore: secondLens[1],
+    journeyPartScores,
+    rankingMethod
   };
+}
+
+function scoreCandidateAgainstBaselineLens(item, baselineLensEmbeddings, lensKey) {
+  if (!baselineLensEmbeddings || !item.embedding || !lensKey) return 0;
+  const embedding = baselineLensEmbeddings[lensKey];
+  if (!embedding) return 0;
+  return dotProduct(item.embedding, embedding);
 }
 
 function scoreCandidateAgainstBaseline(item, baselineLensEmbeddings) {
@@ -563,7 +718,7 @@ function scoreCandidateAgainstBaseline(item, baselineLensEmbeddings) {
   return totalWeight ? weightedScore / totalWeight : 0;
 }
 
-function buildLensCandidatePool({ vocabulary, scoredAll, microLensEmbeddings, excludedIds, historyWords }) {
+function buildLensCandidatePool({ vocabulary, scoredAll, microLensEmbeddings, excludedIds, historyWords, microLensDefinitions = MICRO_EMBEDDING_LENSES }) {
   const poolById = new Map();
 
   for (const candidate of scoredAll.slice(0, CORE_CANDIDATE_POOL_SIZE)) {
@@ -571,7 +726,7 @@ function buildLensCandidatePool({ vocabulary, scoredAll, microLensEmbeddings, ex
   }
 
   if (microLensEmbeddings) {
-    for (const lens of MICRO_EMBEDDING_LENSES) {
+    for (const lens of microLensDefinitions) {
       const embedding = microLensEmbeddings[lens.key];
       if (!embedding) continue;
 
@@ -728,6 +883,64 @@ function appearsInClientText(candidate, journeyText) {
   });
 }
 
+
+function getSelectedCueEmbeddings(journey) {
+  const vocabularyById = journey.vocabularyById || {};
+  return (journey.selectedWordIds || [])
+    .map((id) => vocabularyById[id]?.embedding)
+    .filter(Boolean);
+}
+
+function applyFinalSelectedCueScore(candidate, selectedCueEmbeddings) {
+  if (!selectedCueEmbeddings.length || !candidate.embedding) return candidate;
+
+  const averageVector = averageEmbeddingVectors(selectedCueEmbeddings);
+  const selectedAverageScore = averageVector ? dotProduct(candidate.embedding, averageVector) : 0;
+  const selectedMaxScore = Math.max(...selectedCueEmbeddings.map((embedding) => dotProduct(candidate.embedding, embedding)));
+  const selectedCueScore = (0.60 * selectedAverageScore) + (0.40 * selectedMaxScore);
+  const textScore = candidate.score || 0;
+  const directRelevanceScore = Number.isFinite(candidate?.lensScores?.direct) ? candidate.lensScores.direct : 0;
+  const score = (FINAL_TEXT_SCORE_WEIGHT * textScore)
+    + (FINAL_SELECTED_CUE_WEIGHT * selectedCueScore)
+    + (FINAL_DIRECT_RELEVANCE_WEIGHT * directRelevanceScore);
+
+  return {
+    ...candidate,
+    score,
+    textScore,
+    directRelevanceScore,
+    selectedCueScore,
+    selectedAverageScore,
+    selectedMaxScore,
+    rankingMethod: `${candidate.rankingMethod || "embedding"}_final_selected_cue`
+  };
+}
+
+function averageEmbeddingVectors(vectors) {
+  if (!vectors.length) return null;
+  const length = vectors[0]?.length || 0;
+  if (!length) return null;
+
+  const average = new Array(length).fill(0);
+  for (const vector of vectors) {
+    for (let index = 0; index < length; index += 1) {
+      average[index] += vector[index] || 0;
+    }
+  }
+
+  for (let index = 0; index < length; index += 1) {
+    average[index] /= vectors.length;
+  }
+
+  return normalizeVector(average);
+}
+
+function normalizeVector(vector) {
+  const magnitude = Math.sqrt(vector.reduce((sum, value) => sum + (value * value), 0));
+  if (!magnitude) return vector;
+  return vector.map((value) => value / magnitude);
+}
+
 function buildFinalWordSections({ scoredCandidates, journey, perSection = 8, method }) {
   const shownIds = new Set(journey.shownWordIds || []);
   const selectedIds = new Set(journey.selectedWordIds || []);
@@ -749,20 +962,23 @@ function buildFinalWordSections({ scoredCandidates, journey, perSection = 8, met
     .sort((a, b) => b.score - a.score);
 
   const bucketDefinitions = [
-    { key: "direct", lensKey: "direct" },
-    { key: "image", lensKey: "image" },
-    { key: "symbol", lensKey: "symbol" },
-    { key: "scene", lensKey: "scene" }
+    { key: "images_objects", lensKey: "visual", microFamilies: ["image"] },
+    { key: "forms_textures", lensKey: "material", microFamilies: ["form"] },
+    { key: "colors_materials_light", lensKey: "material", microFamilies: ["material"] },
+    { key: "symbols_motifs", lensKey: "symbol", microFamilies: ["symbol"] },
+    { key: "scenes_atmosphere", lensKey: "scene", microFamilies: ["scene"] }
   ];
 
   const groups = {};
 
   for (const bucket of bucketDefinitions) {
-    const bucketPool = cleanNewPool
-      .filter((candidate) => candidate.bestCoreLens === bucket.lensKey)
-      .filter((candidate) => !globallyUsedIds.has(candidate.id))
-      .filter((candidate) => !isTooSimilarByWord(candidate, globallyUsedWords))
-      .filter((candidate) => !isTooSimilarToSelected(candidate, globallyUsedWords, 0.88));
+    const bucketPool = buildBucketPoolForCoreLens({
+      candidates: cleanNewPool,
+      lensKey: bucket.lensKey,
+      microFamilies: bucket.microFamilies || [],
+      globallyUsedIds,
+      globallyUsedWords
+    });
 
     topRawCandidates[bucket.key] = bucketPool.slice(0, 30).map(toDebugCandidate);
 
@@ -801,8 +1017,48 @@ function buildFinalWordSections({ scoredCandidates, journey, perSection = 8, met
   };
 }
 
+
+function buildBucketPoolForCoreLens({ candidates, lensKey, microFamilies = [], globallyUsedIds, globallyUsedWords }) {
+  const base = candidates
+    .filter((candidate) => !globallyUsedIds.has(candidate.id))
+    .filter((candidate) => !isTooSimilarByWord(candidate, globallyUsedWords))
+    .filter((candidate) => !isTooSimilarToSelected(candidate, globallyUsedWords, 0.88));
+
+  const familyPool = microFamilies.length
+    ? base.filter((candidate) => microFamilies.includes(candidate.bestMicroLensFamily))
+    : [];
+  const source = familyPool.length >= 4 ? familyPool : base;
+
+  return source
+    .map((candidate) => {
+      const lensBucketScore = getCandidateLensBucketScore(candidate, lensKey);
+      const familyMatchBonus = microFamilies.includes(candidate.bestMicroLensFamily) ? 0.08 : 0;
+      return {
+        ...candidate,
+        lensBucketKey: lensKey,
+        lensBucketFamilies: microFamilies,
+        lensBucketScore,
+        score: Number.isFinite(lensBucketScore)
+          ? (0.70 * lensBucketScore) + (0.22 * (candidate.score || 0)) + familyMatchBonus
+          : candidate.score
+      };
+    })
+    .filter((candidate) => Number.isFinite(candidate.score))
+    .sort((a, b) => b.score - a.score);
+}
+
+function getCandidateLensBucketScore(candidate, lensKey) {
+  const corrected = candidate?.correctedLensScores?.[lensKey];
+  if (Number.isFinite(corrected)) return corrected;
+
+  const raw = candidate?.lensScores?.[lensKey];
+  if (Number.isFinite(raw)) return raw;
+
+  return candidate?.score;
+}
+
 function assignBestCoreLens(candidate) {
-  const scores = candidate?.lensScores || {};
+  const scores = candidate?.correctedLensScores || candidate?.lensScores || {};
   const entries = Object.entries(scores)
     .filter(([, value]) => Number.isFinite(value));
 
@@ -816,8 +1072,8 @@ function assignBestCoreLens(candidate) {
 
   return {
     ...candidate,
-    bestCoreLens: bestKey,
-    bestCoreLensScore: bestScore
+    bestCoreLens: candidate.bestCoreLens || bestKey,
+    bestCoreLensScore: candidate.bestCoreLensScore ?? bestScore
   };
 }
 
@@ -1109,6 +1365,27 @@ function toDebugCandidate(item) {
     literalPenalty: Number.isFinite(item.literalPenalty) ? Number(item.literalPenalty.toFixed(4)) : item.literalPenalty,
     baselineScore: Number.isFinite(item.baselineScore) ? Number(item.baselineScore.toFixed(4)) : item.baselineScore,
     baselinePenalty: Number.isFinite(item.baselinePenalty) ? Number(item.baselinePenalty.toFixed(4)) : item.baselinePenalty,
+    specificityBonus: Number.isFinite(item.specificityBonus) ? Number(item.specificityBonus.toFixed(4)) : item.specificityBonus,
+    textScore: Number.isFinite(item.textScore) ? Number(item.textScore.toFixed(4)) : item.textScore,
+    selectedCueScore: Number.isFinite(item.selectedCueScore) ? Number(item.selectedCueScore.toFixed(4)) : item.selectedCueScore,
+    selectedAverageScore: Number.isFinite(item.selectedAverageScore) ? Number(item.selectedAverageScore.toFixed(4)) : item.selectedAverageScore,
+    selectedMaxScore: Number.isFinite(item.selectedMaxScore) ? Number(item.selectedMaxScore.toFixed(4)) : item.selectedMaxScore,
+    bestCoreLens: item.bestCoreLens,
+    bestCoreLensScore: Number.isFinite(item.bestCoreLensScore) ? Number(item.bestCoreLensScore.toFixed(4)) : item.bestCoreLensScore,
+    secondCoreLens: item.secondCoreLens,
+    secondCoreLensScore: Number.isFinite(item.secondCoreLensScore) ? Number(item.secondCoreLensScore.toFixed(4)) : item.secondCoreLensScore,
+    correctedLensScores: item.correctedLensScores
+      ? Object.fromEntries(Object.entries(item.correctedLensScores).map(([key, value]) => [
+          key,
+          Number.isFinite(value) ? Number(value.toFixed(4)) : value
+        ]))
+      : undefined,
+    baselineLensScores: item.baselineLensScores
+      ? Object.fromEntries(Object.entries(item.baselineLensScores).map(([key, value]) => [
+          key,
+          Number.isFinite(value) ? Number(value.toFixed(4)) : value
+        ]))
+      : undefined,
     diversityPenalty: Number.isFinite(item.diversityPenalty) ? Number(item.diversityPenalty.toFixed(4)) : item.diversityPenalty,
     microLensPenalty: Number.isFinite(item.microLensPenalty) ? Number(item.microLensPenalty.toFixed(4)) : item.microLensPenalty,
     bestMicroLens: item.bestMicroLens,

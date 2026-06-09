@@ -1033,8 +1033,28 @@
   },
   "follow_up_prompts": [
     {
-      "id": "followup_universal_make_think",
-      "prompt": "What does “{display}” make you think of?"
+      "id": "visual_picture",
+      "prompt": "When you think about “{display},” what do you picture?"
+    },
+    {
+      "id": "visual_place",
+      "prompt": "When you think about “{display},” what kind of place comes to mind?"
+    },
+    {
+      "id": "visual_detail",
+      "prompt": "Tell me one detail you picture when you think about “{display}.”"
+    },
+    {
+      "id": "visual_color_texture",
+      "prompt": "Tell me about a color, texture, or material you connect with “{display}.”"
+    },
+    {
+      "id": "visual_scene",
+      "prompt": "Describe a scene that comes to mind when you think about “{display}.”"
+    },
+    {
+      "id": "visual_object_detail",
+      "prompt": "Tell me about an object or detail you connect with “{display}.”"
     }
   ],
   "deprecated": {

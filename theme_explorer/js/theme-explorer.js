@@ -4,6 +4,9 @@ import {
   buildBaselineLensInputs,
   buildCoreLensInputs,
   buildEmbeddingInput,
+  buildFinalMotifBaselineLensInputs,
+  buildFinalMotifCoreLensInputs,
+  buildFinalMotifMicroLensInputs,
   buildMicroLensInputs,
   buildWeightedCoreLensInputs,
   rankCandidatesByEmbedding,
@@ -18,13 +21,14 @@ const STORAGE_KEY = "bmbm_theme_explorer_session_v1";
 const DEFAULT_MAX_ROUNDS = 3;
 const CANDIDATE_COUNT = 6;
 const FINAL_WORD_SECTIONS = [
-  { key: "direct", label: "Close to what you wrote", helper: "New words that match the plain language of this theme." },
-  { key: "image", label: "Images and details", helper: "New words with a visual, sensory, or concrete feel." },
-  { key: "symbol", label: "Symbols and patterns", helper: "New words that may work as a symbol, pattern, or motif." },
-  { key: "scene", label: "Scenes and atmosphere", helper: "New words with a memory, setting, or mood around them." },
-  { key: "second_chance", label: "Worth another look", helper: "Words that came up earlier, but may fit better now." }
+  { key: "images_objects", label: "Images and objects", helper: "Visual things that might help Michele picture the theme." },
+  { key: "forms_textures", label: "Shapes, patterns, and textures", helper: "Words that suggest form, surface, pattern, or movement." },
+  { key: "colors_materials_light", label: "Colors, materials, and light", helper: "Words that point toward visual tone, shine, color, or material feel." },
+  { key: "symbols_motifs", label: "Symbols and motifs", helper: "Words that might work as a recurring image or emblem." },
+  { key: "scenes_atmosphere", label: "Scenes and atmosphere", helper: "Words that suggest setting, mood, or visual environment." },
+  { key: "second_chance", label: "Worth another look", helper: "Words that appeared earlier, rescored as visual motif ideas." }
 ];
-const FINAL_WORDS_PER_SECTION = 8;
+const FINAL_WORDS_PER_SECTION = 10;
 
 const rootDefault = document.querySelector("#theme-explorer-root");
 
@@ -57,6 +61,10 @@ const state = {
     copied: false
   }
 };
+
+function getFinalVisualMotifVocabulary() {
+  return state.data.vocabulary.filter((word) => word?.is_good_visual_motif === true);
+}
 
 function createEmptyJourney() {
   return {
@@ -233,10 +241,10 @@ function renderIntro() {
   return `
     <div class="theme-stack theme-intro-screen">
       <p class="eyebrow">Themes</p>
-      <h1>Themes.</h1>
+      <h1>Themes are optional.</h1>
       <p class="subtext theme-large-copy">
-        You don't need to have a theme at all. Some clients come in with a clear idea, some have a loose direction,
-        and some just want Michele to help with a cohesive aesthetic. All of that is okay. In this section you can help Michele understand what your new look should mean.
+        You do not need to have a theme at all. Some clients come in with a clear idea, some have a loose direction,
+        and some just want Michele to help them choose jewelry that feels right. All of that is okay.
       </p>
       ${renderModelStatus()}
       <div class="button-row">
@@ -277,9 +285,9 @@ function renderExplorerChoice() {
     <div class="theme-stack">
       <p class="eyebrow">Optional step</p>
       <h1>Want help finding a few more words?</h1>
-      <p class="subtext">If you want to take a few minutes develop some theme ideas, the explorer can help give Michele more to work with.</p>
+      <p class="subtext">You can answer a few simple prompts to look for possible words, or skip this and leave the theme section open.</p>
       <div class="button-row">
-        <button class="primary-btn" data-action="continue-to-theme-explorer">Try the explorer.</button>
+        <button class="primary-btn" data-action="continue-to-theme-explorer">Try the word prompts</button>
         <button class="secondary-btn" data-action="skip-theme-explorer">Skip this section</button>
       </div>
       ${renderNavButtons({ back: true, restart: false })}
@@ -409,16 +417,19 @@ function renderFollowupPrompt() {
       <p class="eyebrow">Theme word</p>
       <div class="theme-followup-heading">
         ${renderJourneyPromptContext()}
-        <p class="theme-topic-line">Use “${escapeHtml(display)}” as a starting point.</p>
-        <h1>${escapeHtml(prompt?.promptText || `What does “${display}” make you think of?`)}</h1>
+        <p class="theme-topic-line">Think about “${escapeHtml(display)}” in the context of your earlier answers.</p>
       </div>
       ${renderEarlierAnswersToggle()}
+      <div class="theme-followup-heading">
+        <h1>${escapeHtml(prompt?.promptText || renderPromptTemplate("When you think about “{display},” what do you picture?", display))}</h1>
+      </div>
       <label class="theme-answer-block">
         <span class="sr-only">Your answer</span>
         <textarea class="soft-input theme-textarea" data-field="followup-answer" rows="6" placeholder="A word, phrase, or sentence is enough.">${escapeHtml(prompt?.draftAnswer || "")}</textarea>
       </label>
       <p class="answer-helper" data-answer-helper aria-live="polite"></p>
       <div class="button-row">
+        <button class="secondary-btn" data-action="different-followup-prompt">Try a different question</button>
         <button class="primary-btn" data-action="submit-followup-answer">Continue</button>
       </div>
       ${renderNavButtons({ back: true, restart: true })}
@@ -451,24 +462,34 @@ function renderJourneyPromptContext() {
 }
 
 function renderEarlierAnswersToggle() {
-  const followupResponses = (state.currentJourney.responses || [])
-    .filter((response) => response.type === "followup" && response.answer);
+  const previousResponses = (state.currentJourney.responses || [])
+    .filter((response) => response.answer);
 
-  if (!followupResponses.length) return "";
+  if (!previousResponses.length) return "";
 
   return `
     <details class="theme-earlier-answers">
-      <summary>Show earlier answers</summary>
+      <summary>Show previous answers</summary>
       <div class="theme-earlier-answer-list">
-        ${followupResponses.map((response) => `
+        ${previousResponses.map((response) => `
           <article class="theme-earlier-answer">
-            <h2>${escapeHtml(titleCase(response.display || response.word || "Theme word"))}</h2>
-            <p>${escapeHtml(response.answer)}</p>
+            <h2>${escapeHtml(getResponseHeading(response))}</h2>
+            ${response.topicText ? `<p><strong>Topic:</strong> ${escapeHtml(response.topicText)}</p>` : ""}
+            ${response.promptText ? `<p><strong>Question:</strong> ${escapeHtml(response.promptText)}</p>` : ""}
+            <p><strong>Answer:</strong> ${escapeHtml(response.answer)}</p>
           </article>
         `).join("")}
       </div>
     </details>
   `;
+}
+
+function getResponseHeading(response) {
+  if (response.type === "initial") {
+    return response.responseRole === "short_label" ? "Starting point" : "First details";
+  }
+
+  return titleCase(response.display || response.word || "Theme word");
 }
 
 function renderResonanceSelect() {
@@ -479,9 +500,9 @@ function renderResonanceSelect() {
   return `
     <div class="theme-stack">
       ${renderProgress(true)}
-      <p class="eyebrow">Final words</p>
-      <h1>Do any of these words resonate?</h1>
-      <p class="subtext">Pick any words that feel like part of this theme. You can choose as many or as few as you want.</p>
+      <p class="eyebrow">Visual ideas</p>
+      <h1>Do any of these visual motifs fit?</h1>
+      <p class="subtext">Pick any words that could help Michele picture the theme. You can choose as many or as few as you want.</p>
       ${hasGroups ? `
         <div class="theme-resonance-groups">
           ${FINAL_WORD_SECTIONS.map((section) => renderResonanceGroup(section, groups[section.key] || [])).join("")}
@@ -1241,15 +1262,18 @@ async function loadResonanceOptions() {
     vocabularyById: state.data.vocabularyById
   };
   const inputText = buildEmbeddingInput(journeyForInput);
+  const finalVisualMotifVocabulary = getFinalVisualMotifVocabulary();
+
+  if (!finalVisualMotifVocabulary.length) {
+    console.warn("No vocabulary records are marked is_good_visual_motif === true.");
+  }
+
   let rankingResult;
 
   try {
-    const weightedCoreLensInputs = buildWeightedCoreLensInputs(journeyForInput);
-    const coreLensInputs = Object.keys(weightedCoreLensInputs.inputs).length
-      ? weightedCoreLensInputs.inputs
-      : buildCoreLensInputs(inputText);
-    const microLensInputs = buildMicroLensInputs(inputText);
-    const baselineLensInputs = buildBaselineLensInputs();
+    const coreLensInputs = buildFinalMotifCoreLensInputs(inputText);
+    const microLensInputs = buildFinalMotifMicroLensInputs(inputText);
+    const baselineLensInputs = buildFinalMotifBaselineLensInputs();
     const lensEmbeddings = await embedInputMap(coreLensInputs, { retryLimit: 2 });
     const microLensEmbeddings = await embedInputMap(microLensInputs, { retryLimit: 2 });
     const baselineLensEmbeddings = await embedInputMap(baselineLensInputs, { retryLimit: 2 });
@@ -1257,12 +1281,10 @@ async function loadResonanceOptions() {
     rankingResult = rankResonanceWordsByEmbedding({
       inputEmbedding: lensEmbeddings.direct,
       lensEmbeddings,
-      weightedLensEmbeddings: Object.keys(weightedCoreLensInputs.inputs).length
-        ? { entries: weightedCoreLensInputs.entries, embeddings: lensEmbeddings }
-        : null,
+      weightedLensEmbeddings: null,
       microLensEmbeddings,
       baselineLensEmbeddings,
-      vocabulary: state.data.vocabulary,
+      vocabulary: finalVisualMotifVocabulary,
       journey: state.currentJourney,
       sections: FINAL_WORD_SECTIONS,
       perSection: FINAL_WORDS_PER_SECTION
@@ -1275,7 +1297,7 @@ async function loadResonanceOptions() {
 
     rankingResult = rankResonanceWordsByKeywordFallback({
       inputText,
-      vocabulary: state.data.vocabulary,
+      vocabulary: finalVisualMotifVocabulary,
       journey: state.currentJourney,
       sections: FINAL_WORD_SECTIONS,
       perSection: FINAL_WORDS_PER_SECTION
@@ -1320,26 +1342,47 @@ function chooseWord(wordId) {
   state.currentJourney.currentPrompt = chooseFollowupPrompt(word);
 }
 
-function chooseFollowupPrompt(word) {
+function chooseFollowupPrompt(word, options = {}) {
   const display = getWordDisplay(word);
-  const promptText = `What does “${display}” make you think of?`;
-  const promptId = `followup_universal_make_think_${word.id}`;
+  const promptRecord = chooseFollowupPromptRecord(options.excludePromptBankId);
+  const template = promptRecord?.prompt || "When you think about “{display},” what do you picture?";
+  const promptText = renderPromptTemplate(template, display);
+  const promptBankId = promptRecord?.id || "followup_visual_picture";
+  const promptId = `${promptBankId}_${word.id}`;
 
-  markShownPrompt(promptId);
+  markShownPrompt(promptBankId);
 
   return {
     id: promptId,
+    promptBankId,
     set: word.primarySet,
-    frame: "universal_starting_point",
+    frame: "universal_visual_detail",
     wordId: word.id,
     word: word.word,
     display,
-    topicText: `Use “${display}” as a starting point.`,
+    topicText: `Think about “${display}” in the context of your earlier answers.`,
     promptText,
-    template: "What does “{display}” make you think of?",
+    template,
     renderedText: promptText,
     draftAnswer: ""
   };
+}
+
+function chooseFollowupPromptRecord(excludePromptBankId = null) {
+  const prompts = Array.isArray(state.data.promptBank?.follow_up_prompts)
+    ? state.data.promptBank.follow_up_prompts
+    : [];
+
+  const validPrompts = prompts.filter((prompt) => prompt?.id && (prompt.prompt || prompt.template));
+  const allowedPrompts = excludePromptBankId
+    ? validPrompts.filter((prompt) => prompt.id !== excludePromptBankId)
+    : validPrompts;
+
+  return chooseUnusedItem(allowedPrompts.length ? allowedPrompts : validPrompts, state.currentJourney.shownPromptIds) || null;
+}
+
+function renderPromptTemplate(template, display) {
+  return String(template || "").split("{display}").join(display);
 }
 
 function getQuestionFrame(word) {
@@ -1367,7 +1410,11 @@ function getWordDisplay(word) {
 function chooseDifferentFollowupPrompt() {
   const word = state.currentJourney.currentSelectedWord;
   if (!word) return;
-  state.currentJourney.currentPrompt = chooseFollowupPrompt(word);
+
+  const currentPrompt = state.currentJourney.currentPrompt;
+  state.currentJourney.currentPrompt = chooseFollowupPrompt(word, {
+    excludePromptBankId: currentPrompt?.promptBankId || null
+  });
 }
 
 async function submitFollowupAnswer() {
@@ -1388,7 +1435,7 @@ async function submitFollowupAnswer() {
     set: word.primarySet,
     frame: prompt.frame || null,
     contextText: getJourneyContextLine(),
-    topicText: prompt.topicText || `Use “${getWordDisplay(word)}” as a starting point.`,
+    topicText: prompt.topicText || `Think about “${getWordDisplay(word)}” in the context of your earlier answers.`,
     promptId: prompt.id,
     promptText: prompt.promptText || prompt.renderedText,
     answer,

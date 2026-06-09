@@ -23,17 +23,17 @@ const DEFAULT_DIMENSIONS = [
 let DIMENSIONS = normalizeDimensions(VOCABULARY_PAYLOAD?.dimensions || DEFAULT_DIMENSIONS);
 
 const COLOR_OPTIONS = [
-  { id: 'soft-neutrals', label: 'Soft neutrals' },
-  { id: 'warm-tones', label: 'Warm tones' },
-  { id: 'cool-tones', label: 'Cool tones' },
-  { id: 'black-dark-tones', label: 'Black / dark tones' },
-  { id: 'colorful-playful', label: 'Colorful / playful' },
-  { id: 'not-sure', label: 'Not sure' },
-  { id: 'other', label: 'Other / add details' }
+  { id: 'soft-neutrals', label: 'Soft neutrals', palette: ['#f8eee7', '#e7d8cc', '#c9b8aa'] },
+  { id: 'warm-tones', label: 'Warm palette', palette: ['#f4c07f', '#c96f4b', '#8e4d3c'] },
+  { id: 'cool-tones', label: 'Cool palette', palette: ['#d8e6ea', '#8fb4c8', '#5d7896'] },
+  { id: 'black-dark-tones', label: 'Dark palette', palette: ['#2f2a2b', '#5b4b53', '#8b7f83'] },
+  { id: 'colorful-playful', label: 'Colorful palette', palette: ['#f5a3b8', '#b6d982', '#8db9e8'] },
+  { id: 'not-sure', label: 'Don’t know', paletteType: 'blank' },
+  { id: 'other', label: 'Other / add details', paletteType: 'open' }
 ];
 
-const ROUTE_REQUIRED_COPY = 'You can skip ahead, but the style quiz may be especially helpful here. It gives Michele a few more words to work with when you’re not sure how to describe the look yet.';
-const ROUTE_OPTIONAL_COPY = 'What you wrote already gives Michele a helpful starting point. You can skip ahead, or try the style quiz for a few extra words that may help narrow the mood, clarify the details, and give Michele more to work from.';
+const ROUTE_REQUIRED_COPY = 'You can skip ahead, but Your Style Fingerprint may be especially helpful here. It gives Michele a few more words to work with when you’re not sure how to describe the look yet.';
+const ROUTE_OPTIONAL_COPY = 'What you wrote already gives Michele a helpful starting point. You can skip ahead, or build Your Style Fingerprint for a few extra words that may help narrow the mood, clarify the details, and give Michele more to work from.';
 
 const state = {
   screen: 'intro',
@@ -54,12 +54,23 @@ const state = {
     adaptiveSelectedIds: [],
     adaptiveShownIds: []
   },
+  badFit: {
+    currentIds: []
+  },
   adaptive: {
     phase: 'before-midpoint',
     roundIndex: 0,
     beforeMidpointRounds: 3,
-    afterMidpointRounds: 2,
+    afterMidpointRounds: 0,
     currentRoundIds: []
+  },
+  vocabularyPairs: {
+    roundIndex: 0,
+    totalRounds: 3,
+    currentPairIds: [],
+    pairIdsByRound: {},
+    shownIds: [],
+    choices: {}
   },
   midpoint: {
     descriptors: [],
@@ -426,7 +437,7 @@ function globalProgressStep() {
 }
 
 function styleScreenOrder() {
-  return ['intro', 'styleIdea', 'metals', 'gems', 'colors', 'routing', 'initialPositive', 'badFit', 'adaptive', 'midpoint', 'opposingPairs', 'summary'];
+  return ['intro', 'styleIdea', 'materials', 'routing', 'fingerprintIntro', 'initialPositive', 'badFit', 'titleNarrow', 'adaptive', 'midpoint', 'titleVocabularyPairs', 'vocabularyPairs', 'titleFinalClarification', 'opposingPairs', 'summary'];
 }
 
 function render() {
@@ -437,14 +448,50 @@ function render() {
   const renderers = {
     intro: renderIntro,
     styleIdea: renderStyleIdea,
-    metals: renderMetals,
-    gems: renderGems,
-    colors: renderColors,
+    materials: renderMaterials,
     routing: renderRouting,
+    fingerprintIntro: () => renderFingerprintTitleScreen({
+      eyebrow: 'Your Style Fingerprint',
+      title: 'Let’s build your style fingerprint.',
+      body: 'A few quick choices help Michele understand your visual direction.',
+      fill: 0,
+      back: 'routing',
+      next: 'initialPositive'
+    }),
     initialPositive: renderInitialPositive,
     badFit: renderBadFit,
+    titleNarrow: () => renderFingerprintTitleScreen({
+      eyebrow: 'Fingerprint forming',
+      title: 'Let’s narrow it down.',
+      body: 'Your first choices set the broad direction.',
+      fill: 0.28,
+      insight: styleLeanCopy('Leaning'),
+      back: 'badFit',
+      next: 'adaptive',
+      onNext: 'beginNarrowing'
+    }),
     adaptive: renderAdaptive,
     midpoint: renderMidpoint,
+    titleVocabularyPairs: () => renderFingerprintTitleScreen({
+      eyebrow: 'Fingerprint taking shape',
+      title: 'Now choose between close pairs.',
+      body: 'In each pair, pick the word that feels more like you.',
+      fill: 0.58,
+      insight: styleLeanCopy('Leaning'),
+      back: 'midpoint',
+      next: 'vocabularyPairs',
+      onNext: 'beginVocabularyPairs'
+    }),
+    vocabularyPairs: renderVocabularyPairs,
+    titleFinalClarification: () => renderFingerprintTitleScreen({
+      eyebrow: 'Almost complete',
+      title: 'One last pass.',
+      body: 'These last choices sharpen the final fingerprint.',
+      fill: 0.86,
+      insight: styleLeanCopy('Strongest lines'),
+      back: 'vocabularyPairs',
+      next: 'opposingPairs'
+    }),
     opposingPairs: renderOpposingPairs,
     summary: renderSummary
   };
@@ -479,21 +526,91 @@ function renderIntro() {
   `;
 }
 
+
+function renderFingerprintTitleScreen({ eyebrow, title, body, fill = 0, insight = '', back = '', next = '', onNext = '' }) {
+  const backAttr = back ? `data-go="${escapeHTML(back)}"` : '';
+  const nextAttr = onNext ? `data-title-action="${escapeHTML(onNext)}"` : `data-go="${escapeHTML(next)}"`;
+  return `
+    <div class="style-screen-card is-active title-card fingerprint-title-card compact-title-card">
+      <p class="eyebrow">${escapeHTML(eyebrow)}</p>
+      ${renderFingerprintVisual(fill)}
+      <h1>${escapeHTML(title)}</h1>
+      ${body ? `<p class="subtext compact-body">${escapeHTML(body)}</p>` : ''}
+      ${insight ? `<p class="fingerprint-insight-inline">${insight}</p>` : ''}
+      <div class="button-row screen-actions">
+        ${back ? `<button class="secondary-btn" type="button" ${backAttr}>Back</button>` : ''}
+        <button class="primary-btn" type="button" ${nextAttr}>Continue</button>
+      </div>
+      ${next !== 'initialPositive' ? renderQuizExitAction() : ''}
+    </div>
+  `;
+}
+
+function renderFingerprintVisual(fill = 0) {
+  const layerSources = [
+    'assets/fingerprint-layers/layer-01.png',
+    'assets/fingerprint-layers/layer-02.png',
+    'assets/fingerprint-layers/layer-03.png',
+    'assets/fingerprint-layers/layer-04.png',
+    'assets/fingerprint-layers/layer-05.png',
+    'assets/fingerprint-layers/layer-06.png',
+    'assets/fingerprint-layers/layer-07.png',
+    'assets/fingerprint-layers/layer-08.png',
+    'assets/fingerprint-layers/layer-09.png',
+    'assets/fingerprint-layers/layer-10.png',
+    'assets/fingerprint-layers/layer-11.png',
+    'assets/fingerprint-layers/layer-12.png',
+    'assets/fingerprint-layers/layer-13.png',
+    'assets/fingerprint-layers/layer-14.png',
+    'assets/fingerprint-layers/layer-15.png',
+    'assets/fingerprint-layers/layer-16.png',
+    'assets/fingerprint-layers/layer-17.png',
+    'assets/fingerprint-layers/layer-18.png'
+  ];
+  const filledCount = Math.round(clamp(fill, 0, 1) * layerSources.length);
+  return `
+    <div class="fingerprint-visual fingerprint-asset-visual" aria-hidden="true">
+      <img class="fingerprint-asset fingerprint-asset-base" src="assets/style-fingerprint.png" alt="" loading="lazy" />
+      ${layerSources.map((src, index) => `<img class="fingerprint-asset fingerprint-asset-layer ${index < filledCount ? 'is-filled' : ''}" src="${src}" alt="" loading="lazy" />`).join('')}
+    </div>
+  `;
+}
+
+function styleLeanCopy(prefix = 'Leaning') {
+  const vector = currentStyleVector();
+  const poles = DIMENSIONS
+    .map((dimension) => {
+      const score = vector[dimension.id] || 0;
+      return {
+        pole: score < 0 ? dimension.negativePole : dimension.positivePole,
+        abs: Math.abs(score)
+      };
+    })
+    .filter((item) => item.abs >= 0.12)
+    .sort((a, b) => b.abs - a.abs)
+    .slice(0, 2)
+    .map((item) => item.pole);
+
+  if (!poles.length) return 'Still taking shape.';
+  if (poles.length === 1) return `${escapeHTML(prefix)}: <strong>${escapeHTML(poles[0])}</strong>`;
+  return `${escapeHTML(prefix)}: <strong>${escapeHTML(poles[0])}</strong> + <strong>${escapeHTML(poles[1])}</strong>`;
+}
+
 const METAL_OPTIONS = [
-  { id: 'yellow-gold', label: 'Yellow gold' },
-  { id: 'white-gold', label: 'White gold' },
-  { id: 'titanium', label: 'Titanium' },
-  { id: 'no-metal-preference', label: 'No preference' },
+  { id: 'yellow-gold', label: 'Yellow gold', swatch: '#d7b15d' },
+  { id: 'white-gold', label: 'White gold', swatch: '#ece7dc' },
+  { id: 'titanium', label: 'Titanium', swatch: '#b8b3aa' },
+  { id: 'no-metal-preference', label: 'No preference', swatchType: 'blank' },
 ];
 
 const STONE_OPTIONS = [
-  { id: 'diamonds', label: 'Diamonds' },
-  { id: 'cz', label: 'CZ / clear sparkle' },
-  { id: 'opal', label: 'Opal' },
-  { id: 'pearl', label: 'Pearl' },
-  { id: 'colorful-gems', label: 'Colorful gems' },
-  { id: 'no-stones', label: 'No stones' },
-  { id: 'no-stone-preference', label: 'No preference' },
+  { id: 'diamonds', label: 'Diamonds', gemType: 'diamond' },
+  { id: 'cz', label: 'CZ / clear sparkle', gemType: 'cz' },
+  { id: 'opal', label: 'Opal', gemType: 'opal' },
+  { id: 'pearl', label: 'Pearl', gemType: 'pearl' },
+  { id: 'colorful-gems', label: 'Colorful gems', gemType: 'colorful' },
+  { id: 'no-stones', label: 'No stones', gemType: 'none' },
+  { id: 'no-stone-preference', label: 'No preference', gemType: 'blank' },
 ];
 
 function renderStyleIdea() {
@@ -510,69 +627,65 @@ function renderStyleIdea() {
 
       <div class="button-row screen-actions">
         <button class="secondary-btn" type="button" data-go="intro">Back</button>
-        <button class="primary-btn" type="button" data-go="metals">Continue</button>
+        <button class="primary-btn" type="button" data-go="materials">Continue</button>
       </div>
     </div>
   `;
 }
 
-function renderMetals() {
+function renderPaletteSwatch(option) {
+  if (option.paletteType === 'open') {
+    return '<span class="palette-swatch is-open" aria-hidden="true"><span class="palette-special-mark">…</span></span>';
+  }
+  if (option.paletteType === 'blank') {
+    return '<span class="palette-swatch is-blank" aria-hidden="true"><span class="palette-special-mark">?</span></span>';
+  }
+  return `
+    <span class="palette-swatch" aria-hidden="true">
+      ${(option.palette || []).map((color) => `<span style="background:${color}"></span>`).join('')}
+    </span>
+  `;
+}
+
+function renderMaterials() {
   return `
     <div class="style-screen-card is-active form-card">
-      <p class="eyebrow">Metals</p>
-      <h1>Do you have a metal preference?</h1>
+      <p class="eyebrow">Metals, gems & colors</p>
+      <h1>Do you have any jewelry material or color preferences?</h1>
       <p class="subtext">These are just preferences, not final jewelry decisions. Michele works with gold and titanium jewelry.</p>
 
       <div class="question-block">
+        <h2>Metal preference</h2>
         <div class="soft-chip-grid" role="group" aria-label="Metal preference">
           ${METAL_OPTIONS.map((option) => `
-            <button class="soft-chip ${state.preStyle.metalPreferences.includes(option.id) ? 'is-selected' : ''}" type="button" data-metal-id="${option.id}">${option.label}</button>
+            <button class="soft-chip metal-chip ${state.preStyle.metalPreferences.includes(option.id) ? 'is-selected' : ''}" type="button" data-metal-id="${option.id}">
+              <span class="metal-swatch ${option.swatchType ? `is-${option.swatchType}` : ''}" ${option.swatch ? `style="background:${option.swatch}"` : ''} aria-hidden="true"></span>
+              <span>${option.label}</span>
+            </button>
           `).join('')}
         </div>
       </div>
 
-      <div class="button-row screen-actions">
-        <button class="secondary-btn" type="button" data-go="styleIdea">Back</button>
-        <button class="primary-btn" type="button" data-go="gems">Continue</button>
-      </div>
-    </div>
-  `;
-}
-
-function renderGems() {
-  return `
-    <div class="style-screen-card is-active form-card">
-      <p class="eyebrow">Gems</p>
-      <h1>What kind of stones or sparkle do you like?</h1>
-      <p class="subtext">Choose anything you’re drawn to, or skip this for now.</p>
-
       <div class="question-block">
+        <h2>Stones or sparkle</h2>
         <div class="soft-chip-grid" role="group" aria-label="Stone and gem preference">
           ${STONE_OPTIONS.map((option) => `
-            <button class="soft-chip ${state.preStyle.stonePreferences.includes(option.id) ? 'is-selected' : ''}" type="button" data-stone-id="${option.id}">${option.label}</button>
+            <button class="soft-chip gem-chip ${state.preStyle.stonePreferences.includes(option.id) ? 'is-selected' : ''}" type="button" data-stone-id="${option.id}">
+              <span class="gem-swatch is-${option.gemType}" aria-hidden="true"></span>
+              <span>${option.label}</span>
+            </button>
           `).join('')}
         </div>
       </div>
 
-      <div class="button-row screen-actions">
-        <button class="secondary-btn" type="button" data-go="metals">Back</button>
-        <button class="primary-btn" type="button" data-go="colors">Continue</button>
-      </div>
-    </div>
-  `;
-}
-
-function renderColors() {
-  return `
-    <div class="style-screen-card is-active form-card">
-      <p class="eyebrow">Colors</p>
-      <h1>Are there any colors or color families you’re drawn to?</h1>
-      <p class="subtext">This helps Michele understand the mood before you get into placement, anatomy, or specific jewelry.</p>
-
       <div class="question-block">
-        <div class="soft-chip-grid" role="group" aria-label="Color direction">
+        <h2>Colors or color families</h2>
+        <div class="soft-chip-grid color-palette-grid" role="group" aria-label="Color direction">
           ${COLOR_OPTIONS.map((option) => `
-            <button class="color-chip ${state.preStyle.colorDirections.includes(option.id) ? 'is-selected' : ''}" type="button" data-color-id="${option.id}">${option.label}</button>
+            <button class="color-chip ${state.preStyle.colorDirections.includes(option.id) ? 'is-selected' : ''}" type="button" data-color-id="${option.id}">
+              ${renderPaletteSwatch(option)}
+              <span class="color-chip-label">${option.label}</span>
+            </button>
           `).join('')}
         </div>
       </div>
@@ -583,7 +696,7 @@ function renderColors() {
       </div>
 
       <div class="button-row screen-actions">
-        <button class="secondary-btn" type="button" data-go="gems">Back</button>
+        <button class="secondary-btn" type="button" data-go="styleIdea">Back</button>
         <button class="primary-btn" type="button" data-route-style>Continue</button>
       </div>
     </div>
@@ -595,11 +708,11 @@ function renderRouting() {
   return `
     <div class="style-screen-card is-active title-card">
       <p class="eyebrow">${hasDetails ? 'Good starting point' : 'Optional next step'}</p>
-      <h1>${hasDetails ? 'Want to add a little more direction?' : 'Want to try a quick style quiz?'}</h1>
+      <h1>${hasDetails ? 'Want to add a little more direction?' : 'Want to build your style fingerprint?'}</h1>
       <div class="route-card"><p>${hasDetails ? ROUTE_OPTIONAL_COPY : ROUTE_REQUIRED_COPY}</p></div>
       <div class="button-row screen-actions">
         <button class="secondary-btn" type="button" data-skip-summary>Skip to summary</button>
-        <button class="primary-btn" type="button" data-start-explorer>${hasDetails ? 'Try the style quiz' : 'Take the style quiz'}</button>
+        <button class="primary-btn" type="button" data-start-explorer>${hasDetails ? 'Build the fingerprint' : 'Start the fingerprint'}</button>
       </div>
     </div>
   `;
@@ -607,9 +720,9 @@ function renderRouting() {
 
 function renderQuizExitAction() {
   return `
-    <div class="quiz-exit-zone" aria-label="Style quiz exit option">
+    <div class="quiz-exit-zone" aria-label="Style fingerprint exit option">
       <p class="mini-note">Need to move on? You can leave the quiz and keep the answers you’ve already given.</p>
-      <button class="secondary-btn quiz-exit-btn" type="button" data-exit-explorer>Exit style quiz</button>
+      <button class="secondary-btn quiz-exit-btn" type="button" data-exit-explorer>Exit fingerprint</button>
     </div>
   `;
 }
@@ -619,12 +732,12 @@ function renderInitialPositive() {
     <div class="style-screen-card is-active form-card">
       <p class="eyebrow">First impressions</p>
       <h1>Pick a few words that feel close.</h1>
-      <p class="subtext">Don’t think too hard. This first set is intentionally short — just enough to find an initial direction.</p>
+      <p class="subtext">First impressions only.</p>
       <div class="style-word-grid">
-        ${vocabulary.pools.initialScreen.map((term) => wordButton(term, state.selections.initialPositiveIds.includes(term.id), 'positive')).join('')}
+        ${initialDisplayTerms().map((term) => wordButton(term, state.selections.initialPositiveIds.includes(term.id), 'positive')).join('')}
       </div>
       <div class="button-row screen-actions">
-        <button class="secondary-btn" type="button" data-go="routing">Back</button>
+        <button class="secondary-btn" type="button" data-go="fingerprintIntro">Back</button>
         <button class="primary-btn" type="button" data-go="badFit">Continue</button>
       </div>
       ${renderQuizExitAction()}
@@ -633,15 +746,23 @@ function renderInitialPositive() {
 }
 
 function renderBadFit() {
-  const seen = initialScreenTermKeys();
-  const terms = vocabulary.pools.badFitEligible
-    .filter((term) => !seen.has(termKey(term)))
-    .slice(0, 20);
+  if (!state.badFit.currentIds.length) {
+    const seen = initialScreenTermKeys();
+    state.badFit.currentIds = uniqueTermsByTermKey(vocabulary.pools.badFitEligible)
+      .filter((term) => !seen.has(termKey(term)))
+      .slice(0, 12)
+      .map((term) => term.id);
+  }
+
+  const terms = state.badFit.currentIds
+    .map((id) => vocabulary.termsById[id])
+    .filter(Boolean);
+
   return `
     <div class="style-screen-card is-active form-card">
       <p class="eyebrow">Wrong direction</p>
-      <h1>Anything here feel like the wrong direction?</h1>
-      <p class="subtext">This doesn’t mean there’s anything wrong with the style — it just helps Michele understand what’s not quite you.</p>
+      <h1>Anything feel like the wrong direction?</h1>
+      <p class="subtext">Choose anything that does not feel like you.</p>
       <div class="style-word-grid">
         ${terms.map((term) => wordButton(term, state.selections.badFitIds.includes(term.id), 'badfit')).join('')}
       </div>
@@ -663,10 +784,9 @@ function renderAdaptive() {
   const selected = new Set(state.selections.adaptiveSelectedIds);
   return `
     <div class="style-screen-card is-active form-card">
-      <p class="eyebrow">Narrowing in</p>
-      <p class="round-counter">Round ${state.adaptive.roundIndex + 1} of ${roundTotal}</p>
-      <h1>Let’s narrow it in.</h1>
-      <p class="subtext">Tap any that feel right. Skip anything that doesn’t. These should start to get more specific as your style direction comes into focus.</p>
+      <p class="eyebrow">Let’s narrow it down</p>
+      <p class="round-counter">${terms.length} choices</p>
+      <h1>${state.adaptive.roundIndex === 0 ? 'Pick what still feels close.' : state.adaptive.roundIndex === 1 ? 'A little narrower.' : 'Closest fit.'}</h1>
       <div class="adaptive-round-card">
         ${terms.map((term) => wordButton(term, selected.has(term.id), 'adaptive', true)).join('')}
       </div>
@@ -686,11 +806,8 @@ function renderMidpoint() {
   return `
     <div class="style-screen-card is-active form-card">
       <p class="eyebrow">Vibe check</p>
-      <h1>Here’s the style direction so far…</h1>
-      <p class="subtext">Nothing is locked in. This is a steering moment, not a final summary.</p>
-      <div class="mini-note">
-        <p>Use <strong>More</strong> when you want to lean harder into that word, <strong>Good</strong> when it feels about right, and <strong>Less</strong> when it is close but too strong or not quite you.</p>
-      </div>
+      <h1>How close is this?</h1>
+      <p class="subtext">Adjust anything that feels too strong or too weak.</p>
       <div class="vibe-list">
         ${state.midpoint.descriptors.map((descriptor) => `
           <div class="vibe-row">
@@ -712,6 +829,37 @@ function renderMidpoint() {
   `;
 }
 
+function renderVocabularyPairs() {
+  if (!state.vocabularyPairs.currentPairIds.length) {
+    state.vocabularyPairs.currentPairIds = state.vocabularyPairs.pairIdsByRound[state.vocabularyPairs.roundIndex] || chooseVocabularyPair();
+    state.vocabularyPairs.pairIdsByRound[state.vocabularyPairs.roundIndex] = state.vocabularyPairs.currentPairIds;
+  }
+
+  const round = state.vocabularyPairs.roundIndex + 1;
+  const pair = state.vocabularyPairs.currentPairIds.map((id) => vocabulary.termsById[id]).filter(Boolean);
+  const selectedId = state.vocabularyPairs.choices[state.vocabularyPairs.roundIndex];
+
+  return `
+    <div class="style-screen-card is-active form-card">
+      <p class="eyebrow">Closer choice</p>
+      <p class="round-counter">Pair ${round} of ${state.vocabularyPairs.totalRounds}</p>
+      <h1>Which feels closer?</h1>
+      <div class="vocab-either-or-card" role="group" aria-label="Choose the closer style word">
+        ${pair.map((term) => `
+          <button class="vocab-pair-choice ${selectedId === term.id ? 'is-selected' : ''}" type="button" data-vocab-pair-choice="${term.id}" aria-pressed="${selectedId === term.id ? 'true' : 'false'}">
+            ${escapeHTML(term.term)}
+          </button>
+        `).join('')}
+      </div>
+      <div class="button-row screen-actions">
+        <button class="secondary-btn" type="button" data-vocab-pair-back>${round === 1 ? 'Back' : 'Previous'}</button>
+        <button class="primary-btn" type="button" data-next-vocab-pair>${round === state.vocabularyPairs.totalRounds ? 'Continue' : 'Next pair'}</button>
+      </div>
+      ${renderQuizExitAction()}
+    </div>
+  `;
+}
+
 function renderOpposingPairs() {
   if (!state.opposingPairs.shownDimensionIds.length) {
     state.opposingPairs.shownDimensionIds = choosePairDimensions();
@@ -720,12 +868,11 @@ function renderOpposingPairs() {
     <div class="style-screen-card is-active form-card">
       <p class="eyebrow">Final direction</p>
       <h1>A few last either/or choices.</h1>
-      <p class="subtext">Choose what feels closer. You can leave something balanced if neither side feels quite right.</p>
       <div class="pair-list">
         ${state.opposingPairs.shownDimensionIds.map((dimensionId) => pairRow(dimensionId)).join('')}
       </div>
       <div class="button-row screen-actions">
-        <button class="secondary-btn" type="button" data-go="adaptive">Back</button>
+        <button class="secondary-btn" type="button" data-go="titleFinalClarification">Back</button>
         <button class="primary-btn" type="button" data-finish>Submit</button>
       </div>
       ${renderQuizExitAction()}
@@ -736,9 +883,10 @@ function renderOpposingPairs() {
 function renderSummary() {
   return `
     <div class="style-screen-card is-active review-card">
-      <p class="eyebrow">Style</p>
-      <h1>Style.</h1>
-      <p class="subtext">Here’s a quick visual readout of your choices. Michele will get a fuller profile later, but this gives you a chance to tell her what feels right or off.</p>
+      <p class="eyebrow">Style Fingerprint</p>
+      ${renderFingerprintVisual(1)}
+      <h1>Your Style Fingerprint.</h1>
+      <p class="subtext">Here’s the short version of your fingerprint for review. Michele will receive a more detailed style profile, but this gives you a chance to say what feels right or off.</p>
 
       ${renderClientStyleProfile()}
 
@@ -861,7 +1009,7 @@ function renderPreferenceTray(items) {
   `;
 
   return renderCollapsibleProfileSection({
-    title: 'Your starting points',
+    title: 'Starting points for your fingerprint',
     className: 'preference-tray',
     body
   });
@@ -886,15 +1034,15 @@ function buildStrongestStyleNotes(vector) {
 
   return [
     {
-      label: 'Primary',
+      label: 'Strongest lines',
       poles: strongestPoles.slice(0, 2)
     },
     {
-      label: 'Supporting',
+      label: 'Supporting lines',
       poles: strongestPoles.slice(2, 4)
     },
     {
-      label: 'Accent',
+      label: 'Fine details',
       poles: strongestPoles.slice(4, 6)
     }
   ].filter((group) => group.poles.length);
@@ -917,7 +1065,7 @@ function renderStrongestStyleNotes(groups) {
   `;
 
   return renderCollapsibleProfileSection({
-    title: 'Your strongest style notes',
+    title: 'Strongest signals in your fingerprint',
     className: 'strongest-style-notes',
     body
   });
@@ -968,7 +1116,7 @@ function renderKeywordConstellation(items) {
   `;
 
   return renderCollapsibleProfileSection({
-    title: 'Words in your orbit',
+    title: 'Words in your fingerprint',
     className: 'keyword-constellation',
     body
   });
@@ -1169,7 +1317,28 @@ function enrichedHandoffForCopy() {
 
 function bindScreenEvents() {
   document.querySelectorAll('[data-go]').forEach((button) => {
-    button.addEventListener('click', () => go(button.dataset.go));
+    button.addEventListener('click', () => {
+      if (state.screen === 'initialPositive' && button.dataset.go === 'badFit') {
+        state.badFit.currentIds = [];
+        state.selections.badFitIds = [];
+      }
+      go(button.dataset.go);
+    });
+  });
+
+  document.querySelectorAll('[data-title-action]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.titleAction;
+      if (action === 'beginNarrowing') {
+        resetAdaptive('before-midpoint');
+        go('adaptive');
+        return;
+      }
+      if (action === 'beginVocabularyPairs') {
+        resetVocabularyPairs();
+        go('vocabularyPairs');
+      }
+    });
   });
 
   document.querySelectorAll('[data-main-step]').forEach((button) => {
@@ -1194,6 +1363,7 @@ function bindScreenEvents() {
 
   document.querySelectorAll('[data-color-id]').forEach((button) => {
     button.addEventListener('click', () => {
+      persistTextFields();
       toggleArrayValue(state.preStyle.colorDirections, button.dataset.colorId);
       render();
     });
@@ -1201,6 +1371,7 @@ function bindScreenEvents() {
 
     document.querySelectorAll('[data-metal-id]').forEach((button) => {
     button.addEventListener('click', () => {
+      persistTextFields();
       togglePreferenceWithExclusiveOption(
         state.preStyle.metalPreferences,
         button.dataset.metalId,
@@ -1212,6 +1383,7 @@ function bindScreenEvents() {
 
   document.querySelectorAll('[data-stone-id]').forEach((button) => {
     button.addEventListener('click', () => {
+      persistTextFields();
       togglePreferenceWithExclusiveOption(
         state.preStyle.stonePreferences,
         button.dataset.stoneId,
@@ -1240,7 +1412,7 @@ function bindScreenEvents() {
   if (startExplorer) {
     startExplorer.addEventListener('click', () => {
       state.routing.explorerStatus = 'in-progress';
-      go('initialPositive');
+      go('fingerprintIntro');
     });
   }
 
@@ -1270,8 +1442,7 @@ function bindScreenEvents() {
   const beginAdaptive = $('[data-begin-adaptive]');
   if (beginAdaptive) {
     beginAdaptive.addEventListener('click', () => {
-      resetAdaptive('before-midpoint');
-      go('adaptive');
+      go('titleNarrow');
     });
   }
 
@@ -1291,10 +1462,23 @@ function bindScreenEvents() {
   const afterMidpoint = $('[data-after-midpoint]');
   if (afterMidpoint) {
     afterMidpoint.addEventListener('click', () => {
-      resetAdaptive('after-midpoint');
-      go('adaptive');
+      go('titleVocabularyPairs');
     });
   }
+
+  document.querySelectorAll('[data-vocab-pair-choice]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const selectedId = button.dataset.vocabPairChoice;
+      state.vocabularyPairs.choices[state.vocabularyPairs.roundIndex] = selectedId;
+      render();
+    });
+  });
+
+  const vocabPairBack = $('[data-vocab-pair-back]');
+  if (vocabPairBack) vocabPairBack.addEventListener('click', previousVocabularyPair);
+
+  const nextVocabPair = $('[data-next-vocab-pair]');
+  if (nextVocabPair) nextVocabPair.addEventListener('click', advanceVocabularyPair);
 
   document.querySelectorAll('[data-pair-dimension]').forEach((button) => {
     button.addEventListener('click', () => {
@@ -1369,10 +1553,10 @@ function showExitExplorerModal() {
 
   modal.innerHTML = `
     <div class="exit-modal-card" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" aria-describedby="exit-modal-description">
-      <p class="eyebrow">Leave style quiz?</p>
-      <h2 id="exit-modal-title">Do you want to exit the style quiz?</h2>
+      <p class="eyebrow">Leave fingerprint?</p>
+      <h2 id="exit-modal-title">Do you want to exit the style fingerprint?</h2>
       <p id="exit-modal-description" class="subtext">
-        Michele can still make a helpful style profile from what you’ve already shared, especially if you typed in any details at the beginning. But finishing the quiz gives her more clues, so the profile will usually be stronger if you keep going.
+        Michele can still make a helpful style profile from what you’ve already shared, especially if you typed in any details at the beginning. But finishing the fingerprint gives her more clues, so the profile will usually be stronger if you keep going.
       </p>
       <div class="button-row exit-modal-actions">
         <button class="secondary-btn" type="button" data-cancel-exit>Keep going</button>
@@ -1476,6 +1660,73 @@ function go(screen) {
   render();
 }
 
+function resetVocabularyPairs() {
+  state.vocabularyPairs.roundIndex = 0;
+  state.vocabularyPairs.currentPairIds = [];
+  state.vocabularyPairs.pairIdsByRound = {};
+  state.vocabularyPairs.shownIds = [];
+  state.vocabularyPairs.choices = {};
+}
+
+function previousVocabularyPair() {
+  if (state.vocabularyPairs.roundIndex <= 0) {
+    go('titleVocabularyPairs');
+    return;
+  }
+  state.vocabularyPairs.roundIndex -= 1;
+  state.vocabularyPairs.currentPairIds = state.vocabularyPairs.pairIdsByRound[state.vocabularyPairs.roundIndex] || [];
+  render();
+}
+
+function advanceVocabularyPair() {
+  state.vocabularyPairs.shownIds = unique([...state.vocabularyPairs.shownIds, ...state.vocabularyPairs.currentPairIds]);
+  if (state.vocabularyPairs.roundIndex >= state.vocabularyPairs.totalRounds - 1) {
+    go('titleFinalClarification');
+    return;
+  }
+  state.vocabularyPairs.roundIndex += 1;
+  state.vocabularyPairs.currentPairIds = [];
+  render();
+}
+
+function chooseVocabularyPair() {
+  const vector = currentStyleVector();
+  const seen = alreadySeenTermKeys();
+  const candidates = uniqueTermsByTermKey(vocabulary.pools.adaptiveRound)
+    .filter((term) => !seen.has(termKey(term)))
+    .map((term, index) => ({
+      term,
+      index,
+      fit: cosineSimilarity(vector, term.scores),
+      signal: term.topStyleSignal?.dimensionId || 'unknown'
+    }))
+    .filter((item) => Number.isFinite(item.fit))
+    .sort((a, b) => b.fit - a.fit)
+    .slice(0, 36);
+
+  let bestPair = [];
+  let bestScore = -Infinity;
+
+  for (let i = 0; i < candidates.length; i += 1) {
+    for (let j = i + 1; j < candidates.length; j += 1) {
+      const a = candidates[i];
+      const b = candidates[j];
+      const difference = 1 - cosineSimilarity(a.term.scores, b.term.scores);
+      const sameSignalPenalty = a.signal === b.signal ? -0.18 : 0;
+      const fit = (a.fit + b.fit) / 2;
+      const score = fit * 0.62 + difference * 0.38 + sameSignalPenalty + ((i + j) % 7) * 0.002;
+      if (difference < 0.18) continue;
+      if (score > bestScore) {
+        bestScore = score;
+        bestPair = [a.term.id, b.term.id];
+      }
+    }
+  }
+
+  if (bestPair.length === 2) return bestPair;
+  return candidates.slice(0, 2).map((item) => item.term.id);
+}
+
 function resetAdaptive(phase) {
   state.adaptive.phase = phase;
   state.adaptive.roundIndex = 0;
@@ -1501,8 +1752,8 @@ function chooseAdaptiveTerms() {
   const vector = currentStyleVector();
   const seen = alreadySeenTermKeys();
 
-  const scored = vocabulary.pools.adaptiveRound
-  .filter((term) => !seen.has(termKey(term)))
+  const scored = uniqueTermsByTermKey(vocabulary.pools.adaptiveRound)
+    .filter((term) => !seen.has(termKey(term)))
     .map((term, index) => ({
       term,
       index,
@@ -1514,9 +1765,11 @@ function chooseAdaptiveTerms() {
   const chosen = [];
   const usedSignals = new Set();
 
+  const targetCount = state.adaptive.phase === 'before-midpoint' ? Math.max(3, 5 - state.adaptive.roundIndex) : 2;
+
   // First pass: stay close to the working vector, but avoid repeating the same strongest dimension.
   scored.slice(0, 40).forEach((item) => {
-    if (chosen.length >= 5) return;
+    if (chosen.length >= targetCount) return;
     if (usedSignals.has(item.signal)) return;
     chosen.push(item);
     usedSignals.add(item.signal);
@@ -1524,12 +1777,12 @@ function chooseAdaptiveTerms() {
 
   // Second pass: fill with the strongest remaining terms.
   scored.forEach((item) => {
-    if (chosen.length >= 5) return;
+    if (chosen.length >= targetCount) return;
     if (chosen.some((selected) => selected.term.id === item.term.id)) return;
     chosen.push(item);
   });
 
-  return chosen.map((item) => item.term.id).slice(0, 5);
+  return chosen.map((item) => item.term.id).slice(0, targetCount);
 }
 
 function varietyBoost(term, index) {
@@ -1559,6 +1812,7 @@ function currentStyleVector() {
   vector = addTermsToVector(vector, state.selections.initialPositiveIds, 1);
   vector = addTermsToVector(vector, state.selections.badFitIds, -0.75);
   vector = addTermsToVector(vector, state.selections.adaptiveSelectedIds, 1);
+  vector = addVocabularyPairChoicesToVector(vector);
 
   state.midpoint.descriptors.forEach((descriptor) => {
     const response = state.midpoint.responses[descriptor.id];
@@ -1567,10 +1821,24 @@ function currentStyleVector() {
   });
 
   Object.entries(state.opposingPairs.choices).forEach(([dimensionId, choice]) => {
-    vector[dimensionId] = clamp((vector[dimensionId] || 0) + (choice.intensity || 0) * 0.55, -1, 1);
+    vector[dimensionId] = (vector[dimensionId] || 0) + (choice.intensity || 0) * 1.1;
   });
 
   return normalizeVector(vector);
+}
+
+function addVocabularyPairChoicesToVector(vector) {
+  let next = { ...vector };
+
+  Object.entries(state.vocabularyPairs.choices || {}).forEach(([roundIndex, selectedId]) => {
+    const pairIds = state.vocabularyPairs.pairIdsByRound[roundIndex] || [];
+    const unselectedId = pairIds.find((id) => id !== selectedId);
+
+    next = addTermsToVector(next, [selectedId], 0.85);
+    if (unselectedId) next = addTermsToVector(next, [unselectedId], -0.35);
+  });
+
+  return next;
 }
 
 function addTermsToVector(vector, ids, weight) {
@@ -1603,7 +1871,7 @@ function buildMidpointDescriptors() {
   const vector = currentStyleVector();
   const seen = alreadySeenTermKeys();
 
-  const nearbySynopsis = vocabulary.pools.synopsis
+  const nearbySynopsis = uniqueTermsByTermKey(vocabulary.pools.synopsis)
     .filter((term) => !seen.has(termKey(term)))
     .map((term) => ({ term, score: cosineSimilarity(vector, term.scores) }))
     .sort((a, b) => b.score - a.score)
@@ -1656,12 +1924,15 @@ function buildHandoff() {
   const selectedIds = unique([
     ...state.selections.initialPositiveIds,
     ...state.selections.adaptiveSelectedIds,
+    ...Object.values(state.vocabularyPairs.choices || {}),
     ...state.midpoint.descriptors.map((term) => term.id)
   ]);
 
-  const synopsisFriendlySelectedTerms = selectedIds
-    .map((id) => vocabulary.termsById[id])
-    .filter(Boolean)
+  const synopsisFriendlySelectedTerms = uniqueTermsByTermKey(
+    selectedIds
+      .map((id) => vocabulary.termsById[id])
+      .filter(Boolean)
+  )
     .sort((a, b) => cosineSimilarity(finalVector, b.scores) - cosineSimilarity(finalVector, a.scores))
     .slice(0, 12)
     .map(termForHandoff);
@@ -1676,6 +1947,14 @@ function buildHandoff() {
     positiveInitialWords: idsToTerms(state.selections.initialPositiveIds),
     badFitWords: idsToTerms(state.selections.badFitIds),
     adaptiveWordsSelected: idsToTerms(state.selections.adaptiveSelectedIds),
+    vocabularyEitherOrChoices: idsToTerms(Object.values(state.vocabularyPairs.choices || {})),
+    vocabularyEitherOrPairs: Object.fromEntries(Object.entries(state.vocabularyPairs.pairIdsByRound || {}).map(([roundIndex, ids]) => {
+      const selectedId = state.vocabularyPairs.choices[roundIndex] || '';
+      return [roundIndex, {
+        options: idsToTerms(ids || []),
+        selected: selectedId ? idsToTerms([selectedId])[0] || null : null
+      }];
+    })),
     midpointVibeCheck: {
       descriptors: state.midpoint.descriptors.map(termForHandoff),
       responses: state.midpoint.responses
@@ -1700,10 +1979,10 @@ function readableSummary(handoff) {
     <dl class="review-list">
       ${reviewRow('Colors', handoff.selectedColorDirections.join(', ') || 'None selected')}
       ${reviewRow('Style idea', handoff.freeTextStyleIdea || 'Not provided')}
-      ${reviewRow('Style Quiz Status', handoff.styleExplorerStatus)}
+      ${reviewRow('Fingerprint Status', handoff.styleExplorerStatus)}
       ${reviewRow('Positive words', handoff.positiveInitialWords.map((item) => item.term).join(', ') || 'None')}
       ${reviewRow('Wrong direction', handoff.badFitWords.map((item) => item.term).join(', ') || 'None')}
-      ${reviewRow('Adaptive picks', handoff.adaptiveWordsSelected.map((item) => item.term).join(', ') || 'None')}
+      ${reviewRow('Narrowing picks', handoff.adaptiveWordsSelected.map((item) => item.term).join(', ') || 'None')}
       ${reviewRow('Strongest dimensions', handoff.strongestDimensions.map((item) => item.pole).join(', ') || 'None yet')}
     </dl>
   `;
@@ -1791,18 +2070,44 @@ function idsToTermKeys(ids) {
   );
 }
 
-function initialScreenTermKeys() {
-  return new Set(vocabulary.pools.initialScreen.map(termKey));
+function uniqueTermsByTermKey(terms = []) {
+  const seen = new Set();
+  return terms.filter((term) => {
+    const key = termKey(term);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
-function alreadySeenTermKeys() {
-  return new Set([
+function initialDisplayTerms() {
+  return uniqueTermsByTermKey(vocabulary.pools.initialScreen).slice(0, 16);
+}
+
+function initialScreenTermKeys() {
+  return new Set(initialDisplayTerms().map(termKey));
+}
+
+function allDisplayedTermKeys() {
+  const keys = new Set([
     ...initialScreenTermKeys(),
+    ...idsToTermKeys(state.badFit.currentIds),
     ...idsToTermKeys(state.selections.badFitIds),
     ...idsToTermKeys(state.selections.adaptiveShownIds),
     ...idsToTermKeys(state.selections.adaptiveSelectedIds),
+    ...idsToTermKeys(state.adaptive.currentRoundIds),
+    ...idsToTermKeys(state.vocabularyPairs.shownIds),
+    ...idsToTermKeys(state.vocabularyPairs.currentPairIds),
+    ...idsToTermKeys(Object.values(state.vocabularyPairs.choices || {})),
+    ...idsToTermKeys(Object.values(state.vocabularyPairs.pairIdsByRound || {}).flat()),
     ...state.midpoint.descriptors.map(termKey)
   ]);
+
+  return keys;
+}
+
+function alreadySeenTermKeys() {
+  return allDisplayedTermKeys();
 }
 
 function unique(values) {
