@@ -24,8 +24,9 @@ export const SET_LABELS = {
 };
 
 export async function loadThemeData({ dataBasePath = "data/" } = {}) {
-  const [vocabResponse, promptResponse] = await Promise.all([
+  const [vocabResponse, motifResponse, promptResponse] = await Promise.all([
     fetch(`${dataBasePath}theme_vocabulary.json`),
+    fetch(`${dataBasePath}motif_vocabulary.json`),
     fetch(`${dataBasePath}theme_prompt_bank.json`)
   ]);
 
@@ -33,18 +34,27 @@ export async function loadThemeData({ dataBasePath = "data/" } = {}) {
     throw new Error(`Could not load theme vocabulary (${vocabResponse.status}).`);
   }
 
+  if (!motifResponse.ok) {
+    throw new Error(`Could not load motif vocabulary (${motifResponse.status}).`);
+  }
+
   if (!promptResponse.ok) {
     throw new Error(`Could not load theme prompt bank (${promptResponse.status}).`);
   }
 
   const vocabularyPayload = await vocabResponse.json();
+  const motifVocabularyPayload = await motifResponse.json();
   const promptBank = await promptResponse.json();
 
   const vocabulary = normalizeVocabulary(vocabularyPayload);
-  const vocabularyById = Object.fromEntries(vocabulary.map((item) => [item.id, item]));
+  const motifVocabulary = normalizeMotifVocabulary(motifVocabularyPayload);
+  const vocabularyById = Object.fromEntries(
+    [...vocabulary, ...motifVocabulary].map((item) => [item.id, item])
+  );
 
   return {
     vocabulary,
+    motifVocabulary,
     vocabularyById,
     promptBank,
     metadata: vocabularyPayload.metadata || {},
@@ -89,6 +99,41 @@ function normalizeVocabulary(payload) {
       embedding,
       prompt_category: promptCategory,
       grammar
+    };
+  });
+}
+
+
+function normalizeMotifVocabulary(payload) {
+  const rawVocabulary = Array.isArray(payload) ? payload : payload.vocabulary;
+
+  if (!Array.isArray(rawVocabulary)) {
+    throw new Error("Motif vocabulary should be a list or an object with a vocabulary list.");
+  }
+
+  return rawVocabulary.map((item, index) => {
+    const id = item.id || `motif_word_${String(index + 1).padStart(6, "0")}`;
+    const word = String(item.word || "").trim();
+    const display = String(item.display || word).trim();
+    const embedding = Array.isArray(item.embedding) ? item.embedding.map(Number) : null;
+    const domains = Array.isArray(item.domains) ? item.domains : [];
+
+    if (!word) {
+      throw new Error(`Motif vocabulary item ${id} is missing a word.`);
+    }
+
+    return {
+      ...item,
+      id,
+      word,
+      display,
+      label: display,
+      domains,
+      embedding,
+      isMotifVocabulary: true,
+      frequency_rank: Number.isFinite(Number(item.frequency_rank))
+        ? Number(item.frequency_rank)
+        : 0
     };
   });
 }

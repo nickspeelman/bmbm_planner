@@ -30,9 +30,9 @@ const CORE_EMBEDDING_LENSES = [
 ];
 
 const SECOND_BEST_LENS_WEIGHT = 0.20;
-const FINAL_TEXT_SCORE_WEIGHT = 0.55;
-const FINAL_SELECTED_CUE_WEIGHT = 0.25;
-const FINAL_DIRECT_RELEVANCE_WEIGHT = 0.20;
+const FINAL_TEXT_SCORE_WEIGHT = 0.62;
+const FINAL_SELECTED_CUE_WEIGHT = 0.10;
+const FINAL_DIRECT_RELEVANCE_WEIGHT = 0.28;
 const FINAL_GENERIC_BASELINE_WEIGHT = 5;
 const FINAL_SPECIFICITY_BONUS_WEIGHT = 0.75;
 const FINAL_ABSTRACT_PENALTY_WEIGHT = 0.25;
@@ -133,9 +133,12 @@ const SAME_MICRO_FAMILY_PENALTY = 0.08;
 const NEAR_DUPLICATE_THRESHOLD = 0.82;
 
 // Kept only for older saved sessions/debug helpers that may still reference answer-match code paths.
-const EXACT_ANSWER_MATCH_BOOST = 0;
-const CLOSE_ANSWER_MATCH_BOOST = 0;
+const EXACT_ANSWER_MATCH_BOOST = 0.60;
+const CLOSE_ANSWER_MATCH_BOOST = 0.24;
+const FINAL_SEED_PHRASE_WEIGHT = 0.34;
+const FINAL_MAX_SEED_PHRASES = 28;
 const MATCH_SIMILARITY_THRESHOLD = 0.92;
+const FINAL_FREQUENCY_BONUS_WEIGHT = 0.025;
 
 export { CORE_EMBEDDING_LENSES, MICRO_EMBEDDING_LENSES, BASELINE_EMBEDDING_LENSES, FINAL_MOTIF_LENSES, FINAL_MOTIF_MICRO_LENSES, FINAL_MOTIF_BASELINE_LENSES, JOURNEY_PART_WEIGHTS };
 
@@ -290,6 +293,16 @@ export function buildFinalMotifBaselineLensInputs() {
   );
 }
 
+export function buildFinalMotifSeedPhraseInputs(journey) {
+  const phrases = extractFinalMotifSeedPhrases(journey);
+  return Object.fromEntries(
+    phrases.slice(0, FINAL_MAX_SEED_PHRASES).map((phrase, index) => [
+      `seed_${index}`,
+      `specific visual detail, object, material, color, texture, or place: ${phrase}`
+    ])
+  );
+}
+
 export function rankCandidatesByEmbedding({ inputEmbedding, lensEmbeddings = null, weightedLensEmbeddings = null, microLensEmbeddings = null, baselineLensEmbeddings = null, vocabulary, journey, count = 6 }) {
   const excludedIds = getExcludedWordIds(journey);
   const historyWords = getPreviouslyConsideredWords(journey);
@@ -407,7 +420,7 @@ export function rankDiverseExploratoryFallback({ vocabulary, journey, count = 6 
   };
 }
 
-export function rankResonanceWordsByEmbedding({ inputEmbedding, lensEmbeddings = null, weightedLensEmbeddings = null, microLensEmbeddings = null, baselineLensEmbeddings = null, vocabulary, journey, sections = null, perSection = 10, sets = [], perSet = 10 }) {
+export function rankResonanceWordsByEmbedding({ inputEmbedding, lensEmbeddings = null, weightedLensEmbeddings = null, microLensEmbeddings = null, baselineLensEmbeddings = null, seedPhraseEmbeddings = null, vocabulary, journey, sections = null, perSection = 10, sets = [], perSet = 10 }) {
   const journeyText = buildLiteralComparisonText(journey);
   const weightedEntries = buildWeightedEmbeddingEntries(weightedLensEmbeddings);
   const coreEmbeddings = lensEmbeddings || { direct: inputEmbedding };
@@ -438,9 +451,11 @@ export function rankResonanceWordsByEmbedding({ inputEmbedding, lensEmbeddings =
       historyWords,
       microLensDefinitions: sections ? FINAL_MOTIF_MICRO_LENSES : MICRO_EMBEDDING_LENSES
     });
+    const seedBoostedPool = applyFinalSeedPhraseBoost(pool, seedPhraseEmbeddings);
+    const boostedPool = applyFinalAnswerUseBoost(seedBoostedPool, journey);
 
     return buildFinalWordSections({
-      scoredCandidates: pool,
+      scoredCandidates: boostedPool,
       journey,
       perSection,
       method: sections ? "final_visual_motif_micro_discovery_embedding" : "best_core_lens_micro_discovery_embedding"
@@ -468,7 +483,9 @@ export function rankResonanceWordsByKeywordFallback({ inputText, vocabulary, jou
 
       return {
         ...item,
-        score: overlap + (softMatch ? 0.5 : 0),
+        score: overlap
+          + (softMatch ? 0.5 : 0)
+          + (sections ? FINAL_FREQUENCY_BONUS_WEIGHT * Math.max(0, Math.min(1, Number(item.frequency_rank) || 0)) : 0),
         rankingMethod: "keyword_fallback"
       };
     })
@@ -477,9 +494,10 @@ export function rankResonanceWordsByKeywordFallback({ inputText, vocabulary, jou
   const useful = scored.some((item) => item.score > 0);
 
   if (sections) {
+    const finalScoredCandidates = applyFinalAnswerUseBoost(useful ? scored : shuffle(scored), journey);
     return {
       ...buildFinalWordSections({
-        scoredCandidates: useful ? scored : shuffle(scored),
+        scoredCandidates: finalScoredCandidates,
         journey,
         perSection,
         method: useful ? "keyword_fallback" : "diverse_fallback"
@@ -612,7 +630,7 @@ function scoreCandidateWithFinalMotifLenses(item, motifEmbeddings, journeyText, 
     lensScores[lens.key] = dotProduct(item.embedding, embedding);
   }
 
-  return finalizeLensBasedCandidateScore({
+  const scored = finalizeLensBasedCandidateScore({
     item,
     lensScores,
     journeyPartScores: {},
@@ -623,6 +641,19 @@ function scoreCandidateWithFinalMotifLenses(item, motifEmbeddings, journeyText, 
     specificityBonusWeight: FINAL_SPECIFICITY_BONUS_WEIGHT,
     abstractPenaltyWeight: FINAL_ABSTRACT_PENALTY_WEIGHT
   });
+
+  const frequencyRank = Number.isFinite(Number(item.frequency_rank))
+    ? Math.max(0, Math.min(1, Number(item.frequency_rank)))
+    : 0;
+  const frequencyBonus = FINAL_FREQUENCY_BONUS_WEIGHT * frequencyRank;
+
+  return {
+    ...scored,
+    score: scored.score + frequencyBonus,
+    semanticScore: scored.score,
+    frequencyRank,
+    frequencyBonus
+  };
 }
 
 function finalizeLensBasedCandidateScore({
@@ -954,7 +985,7 @@ function buildFinalWordSections({ scoredCandidates, journey, perSection = 8, met
   const topRawCandidates = {};
 
   const cleanNewPool = scoredCandidates
-    .filter((candidate) => !shownIds.has(candidate.id))
+    .filter((candidate) => !shownIds.has(candidate.id) || candidate.answerMatch)
     .filter((candidate) => !selectedIds.has(candidate.id))
     .filter((candidate) => !isTooSimilarByWord(candidate, selectedWords))
     .filter((candidate) => !isTooSimilarToSelected(candidate, selectedWords, 0.88))
@@ -1128,6 +1159,195 @@ function buildResonanceGroups({ scoredCandidates, journey, sets, perSet, method 
   };
 }
 
+function applyFinalSeedPhraseBoost(scoredCandidates, seedPhraseEmbeddings) {
+  if (!seedPhraseEmbeddings || !Array.isArray(scoredCandidates) || !scoredCandidates.length) return scoredCandidates;
+
+  const entries = Object.entries(seedPhraseEmbeddings)
+    .filter(([, embedding]) => Array.isArray(embedding) && embedding.length);
+
+  if (!entries.length) return scoredCandidates;
+
+  return scoredCandidates
+    .map((candidate) => {
+      if (!candidate.embedding) return candidate;
+
+      let bestSeedScore = -Infinity;
+      let bestSeedKey = null;
+
+      for (const [key, embedding] of entries) {
+        const score = dotProduct(candidate.embedding, embedding);
+        if (score > bestSeedScore) {
+          bestSeedScore = score;
+          bestSeedKey = key;
+        }
+      }
+
+      if (!Number.isFinite(bestSeedScore)) return candidate;
+
+      const seedPhraseBoost = Math.max(0, bestSeedScore) * FINAL_SEED_PHRASE_WEIGHT;
+
+      return {
+        ...candidate,
+        score: (candidate.score || 0) + seedPhraseBoost,
+        seedPhraseScore: bestSeedScore,
+        seedPhraseBoost,
+        seedPhraseKey: bestSeedKey,
+        rankingMethod: `${candidate.rankingMethod || "embedding"}_seed_phrase`
+      };
+    })
+    .sort((a, b) => (b.score || 0) - (a.score || 0));
+}
+
+function extractFinalMotifSeedPhrases(journey) {
+  const sourceText = [
+    journey?.initialShortAnswer || "",
+    journey?.initialDetailAnswer || "",
+    journey?.initialAnswer || "",
+    ...((journey?.responses || []).map((response) => response.answer || ""))
+  ].join(" ");
+
+  const normalizedTokens = String(sourceText || "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .split(/\s+/)
+    .map((token) => singularizeSimple(token.trim()))
+    .filter((token) => token.length > 2)
+    .filter((token) => !STOPWORDS.has(token))
+    .filter((token) => !isGenericSeedToken(token));
+
+  const phrases = [];
+  const seen = new Set();
+
+  function addPhrase(parts) {
+    const phrase = parts.filter(Boolean).join(" ").trim();
+    if (!phrase || seen.has(phrase)) return;
+    if (phrase.split(" ").every((part) => isGenericSeedToken(part))) return;
+    seen.add(phrase);
+    phrases.push(phrase);
+  }
+
+  for (let index = 0; index < normalizedTokens.length; index += 1) {
+    const token = normalizedTokens[index];
+    addPhrase([token]);
+
+    if (index + 1 < normalizedTokens.length) {
+      addPhrase([token, normalizedTokens[index + 1]]);
+    }
+
+    if (index + 2 < normalizedTokens.length) {
+      addPhrase([token, normalizedTokens[index + 1], normalizedTokens[index + 2]]);
+    }
+  }
+
+  return phrases
+    .sort((a, b) => getSeedPhrasePriority(b) - getSeedPhrasePriority(a))
+    .slice(0, FINAL_MAX_SEED_PHRASES);
+}
+
+function getSeedPhrasePriority(phrase) {
+  const parts = phrase.split(" ").filter(Boolean);
+  let score = parts.length;
+
+  if (parts.length > 1) score += 2;
+  if (parts.some((part) => part.length >= 6)) score += 0.5;
+  if (parts.some((part) => isGenericSeedToken(part))) score -= 1;
+
+  return score;
+}
+
+function isGenericSeedToken(token) {
+  return new Set([
+    "about", "answer", "comes", "connect", "connected", "detail", "feel", "feels",
+    "felt", "first", "image", "kind", "life", "like", "mind", "moment", "one",
+    "picture", "place", "real", "scene", "specific", "thing", "think", "thought",
+    "word"
+  ]).has(String(token || "").toLowerCase());
+}
+
+function applyFinalAnswerUseBoost(scoredCandidates, journey) {
+  if (!Array.isArray(scoredCandidates) || !scoredCandidates.length) return scoredCandidates;
+
+  const answerTokens = getAnswerTokens(journey);
+  const answerText = normalizeComparableWord([
+    journey.initialShortAnswer || "",
+    journey.initialDetailAnswer || "",
+    journey.initialAnswer || "",
+    ...(journey.responses || []).map((response) => response.answer || "")
+  ].join(" "));
+
+  if (!answerTokens.size && !answerText) return scoredCandidates;
+
+  return scoredCandidates
+    .map((candidate) => {
+      const answerMatch = getAnswerMatchForCandidate(candidate, answerTokens, answerText);
+      if (!answerMatch) return candidate;
+
+      const boost = answerMatch.matchType === "exact"
+        ? EXACT_ANSWER_MATCH_BOOST
+        : CLOSE_ANSWER_MATCH_BOOST;
+
+      return {
+        ...candidate,
+        score: (candidate.score || 0) + boost,
+        answerMatch,
+        answerMatchBoost: boost,
+        rankingMethod: `${candidate.rankingMethod || "embedding"}_answer_${answerMatch.matchType}`
+      };
+    })
+    .sort((a, b) => (b.score || 0) - (a.score || 0));
+}
+
+function getAnswerMatchForCandidate(candidate, answerTokens, answerText) {
+  const candidateKeys = [...new Set([
+    normalizeComparableWord(candidate.word),
+    normalizeComparableWord(candidate.display || candidate.word)
+  ].filter(Boolean))];
+
+  if (!candidateKeys.length) return null;
+
+  for (const key of candidateKeys) {
+    if (containsComparablePhrase(answerText, key)) {
+      return {
+        matchType: "exact",
+        matchedToken: key
+      };
+    }
+  }
+
+  const answerTokenList = Array.from(answerTokens);
+
+  for (const key of candidateKeys) {
+    const keyParts = key.split(" ").filter(Boolean);
+    for (const token of answerTokenList) {
+      if (!token || token.length < 4) continue;
+      if (key.includes(" ")) {
+        if (keyParts.some((part) => part === token || tokenSimilarity(token, part) >= MATCH_SIMILARITY_THRESHOLD)) {
+          return {
+            matchType: "close",
+            matchedToken: token
+          };
+        }
+      } else if (key.includes(token) || token.includes(key) || tokenSimilarity(token, key) >= MATCH_SIMILARITY_THRESHOLD) {
+        return {
+          matchType: "close",
+          matchedToken: token
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+function containsComparablePhrase(answerText, candidateKey) {
+  if (!answerText || !candidateKey) return false;
+  if (candidateKey.includes(" ")) {
+    return (` ${answerText} `).includes(` ${candidateKey} `);
+  }
+  return new Set(answerText.split(" ").filter(Boolean)).has(candidateKey);
+}
+
 function findVocabularyMatchesInAnswers({ vocabulary, journey, excludedIds }) {
   const answerTokens = getAnswerTokens(journey);
   if (!answerTokens.size) return [];
@@ -1247,8 +1467,7 @@ function isTooSimilarToHistory(candidate, historyWords) {
   return historyWords.some((item) => {
     const historyKey = normalizeComparableWord(item.word);
 
-    if (candidateKey && historyKey && candidateKey === historyKey) return true;
-    if (candidateKey && historyKey && areSimplePluralPair(candidateKey, historyKey)) return true;
+    if (candidateKey && historyKey && areLexicalVariants(candidateKey, historyKey)) return true;
 
     if (candidate.embedding && item.embedding) {
       return dotProduct(candidate.embedding, item.embedding) >= 0.86;
@@ -1265,7 +1484,7 @@ function isTooSimilarByWord(candidate, selected) {
   return selected.some((item) => {
     const otherKey = normalizeComparableWord(item.word);
     if (!otherKey) return false;
-    return candidateKey === otherKey || areSimplePluralPair(candidateKey, otherKey);
+    return areLexicalVariants(candidateKey, otherKey);
   });
 }
 
@@ -1292,6 +1511,68 @@ function singularizeSimple(token) {
   }
   if (token.endsWith("s") && !token.endsWith("ss")) return token.slice(0, -1);
   return token;
+}
+
+function areLexicalVariants(a, b) {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (areSimplePluralPair(a, b)) return true;
+
+  const aParts = a.split(" ").filter(Boolean);
+  const bParts = b.split(" ").filter(Boolean);
+
+  if (aParts.length === 1 && bParts.length === 1) {
+    return areSingleWordLexicalVariants(aParts[0], bParts[0]);
+  }
+
+  return aParts.some((aPart) => bParts.some((bPart) => areSingleWordLexicalVariants(aPart, bPart)));
+}
+
+function areSingleWordLexicalVariants(a, b) {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (areSimplePluralPair(a, b)) return true;
+  if (Math.min(a.length, b.length) < 5) return false;
+
+  const aStem = getLooseWordStem(a);
+  const bStem = getLooseWordStem(b);
+  if (aStem && bStem && aStem === bStem && aStem.length >= 5) return true;
+
+  const commonPrefix = getCommonPrefixLength(a, b);
+  const shorterLength = Math.min(a.length, b.length);
+  if (commonPrefix >= 5 && commonPrefix / shorterLength >= 0.70) return true;
+
+  return tokenSimilarity(a, b) >= 0.84;
+}
+
+function getLooseWordStem(token) {
+  let value = singularizeSimple(String(token || "").toLowerCase());
+  const suffixes = [
+    "ational", "fulness", "ousness", "iveness", "tional", "ically", "ation",
+    "ement", "ments", "ness", "less", "able", "ible", "ally", "ally", "ally",
+    "ical", "ship", "hood", "ment", "ful", "ous", "ive", "ing", "ed", "ly",
+    "ic", "al", "y"
+  ];
+
+  for (const suffix of suffixes) {
+    if (value.length > suffix.length + 4 && value.endsWith(suffix)) {
+      value = value.slice(0, -suffix.length);
+      break;
+    }
+  }
+
+  // Keeps romance / romantic together without making the general stemmer too aggressive.
+  if (value.endsWith("ant") && value.length > 6) value = value.slice(0, -3);
+  if (value.endsWith("anc") && value.length > 6) value = value.slice(0, -1);
+
+  return singularizeSimple(value);
+}
+
+function getCommonPrefixLength(a, b) {
+  const limit = Math.min(a.length, b.length);
+  let index = 0;
+  while (index < limit && a[index] === b[index]) index += 1;
+  return index;
 }
 
 function areSimplePluralPair(a, b) {
@@ -1370,6 +1651,9 @@ function toDebugCandidate(item) {
     selectedCueScore: Number.isFinite(item.selectedCueScore) ? Number(item.selectedCueScore.toFixed(4)) : item.selectedCueScore,
     selectedAverageScore: Number.isFinite(item.selectedAverageScore) ? Number(item.selectedAverageScore.toFixed(4)) : item.selectedAverageScore,
     selectedMaxScore: Number.isFinite(item.selectedMaxScore) ? Number(item.selectedMaxScore.toFixed(4)) : item.selectedMaxScore,
+    seedPhraseScore: Number.isFinite(item.seedPhraseScore) ? Number(item.seedPhraseScore.toFixed(4)) : item.seedPhraseScore,
+    seedPhraseBoost: Number.isFinite(item.seedPhraseBoost) ? Number(item.seedPhraseBoost.toFixed(4)) : item.seedPhraseBoost,
+    seedPhraseKey: item.seedPhraseKey,
     bestCoreLens: item.bestCoreLens,
     bestCoreLensScore: Number.isFinite(item.bestCoreLensScore) ? Number(item.bestCoreLensScore.toFixed(4)) : item.bestCoreLensScore,
     secondCoreLens: item.secondCoreLens,
@@ -1404,6 +1688,7 @@ function toDebugCandidate(item) {
           score: Number.isFinite(match.score) ? Number(match.score.toFixed(4)) : match.score
         }))
       : undefined,
+    answerMatchBoost: Number.isFinite(item.answerMatchBoost) ? Number(item.answerMatchBoost.toFixed(4)) : item.answerMatchBoost,
     answerMatch: item.answerMatch ? {
       matchType: item.answerMatch.matchType,
       matchedToken: item.answerMatch.matchedToken

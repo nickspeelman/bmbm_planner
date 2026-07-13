@@ -7,6 +7,7 @@ import {
   buildFinalMotifBaselineLensInputs,
   buildFinalMotifCoreLensInputs,
   buildFinalMotifMicroLensInputs,
+  buildFinalMotifSeedPhraseInputs,
   buildMicroLensInputs,
   buildWeightedCoreLensInputs,
   rankCandidatesByEmbedding,
@@ -40,6 +41,7 @@ const state = {
   options: {},
   data: {
     vocabulary: [],
+    motifVocabulary: [],
     vocabularyById: {},
     promptBank: null,
     loaded: false,
@@ -63,7 +65,7 @@ const state = {
 };
 
 function getFinalVisualMotifVocabulary() {
-  return state.data.vocabulary.filter((word) => word?.is_good_visual_motif === true);
+  return state.data.motifVocabulary || [];
 }
 
 function createEmptyJourney() {
@@ -118,6 +120,7 @@ export async function initThemeExplorer(options = {}) {
     const data = await loadThemeData({ dataBasePath: options.dataBasePath || "data/" });
     state.data = {
       vocabulary: data.vocabulary,
+      motifVocabulary: data.motifVocabulary,
       vocabularyById: data.vocabularyById,
       promptBank: data.promptBank,
       loaded: true,
@@ -1265,7 +1268,7 @@ async function loadResonanceOptions() {
   const finalVisualMotifVocabulary = getFinalVisualMotifVocabulary();
 
   if (!finalVisualMotifVocabulary.length) {
-    console.warn("No vocabulary records are marked is_good_visual_motif === true.");
+    console.warn("The motif vocabulary is empty.");
   }
 
   let rankingResult;
@@ -1274,9 +1277,13 @@ async function loadResonanceOptions() {
     const coreLensInputs = buildFinalMotifCoreLensInputs(inputText);
     const microLensInputs = buildFinalMotifMicroLensInputs(inputText);
     const baselineLensInputs = buildFinalMotifBaselineLensInputs();
+    const seedPhraseInputs = buildFinalMotifSeedPhraseInputs(journeyForInput);
     const lensEmbeddings = await embedInputMap(coreLensInputs, { retryLimit: 2 });
     const microLensEmbeddings = await embedInputMap(microLensInputs, { retryLimit: 2 });
     const baselineLensEmbeddings = await embedInputMap(baselineLensInputs, { retryLimit: 2 });
+    const seedPhraseEmbeddings = Object.keys(seedPhraseInputs).length
+      ? await embedInputMap(seedPhraseInputs, { retryLimit: 2 })
+      : null;
 
     rankingResult = rankResonanceWordsByEmbedding({
       inputEmbedding: lensEmbeddings.direct,
@@ -1284,6 +1291,7 @@ async function loadResonanceOptions() {
       weightedLensEmbeddings: null,
       microLensEmbeddings,
       baselineLensEmbeddings,
+      seedPhraseEmbeddings,
       vocabulary: finalVisualMotifVocabulary,
       journey: state.currentJourney,
       sections: FINAL_WORD_SECTIONS,
