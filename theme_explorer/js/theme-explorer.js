@@ -30,6 +30,9 @@ const FINAL_WORD_SECTIONS = [
   { key: "second_chance", label: "Worth another look", helper: "Words that appeared earlier, rescored as visual motif ideas." }
 ];
 const FINAL_WORDS_PER_SECTION = 10;
+const TEXT_INPUT_SYNC_DELAY_MS = 250;
+
+let pendingTextInputSync = null;
 
 const rootDefault = document.querySelector("#theme-explorer-root");
 
@@ -1005,8 +1008,19 @@ function handleTextInput(event) {
   }
 
   updateAnswerHelper();
-  persistSession();
-  emitChange();
+  scheduleTextInputSync();
+}
+
+function scheduleTextInputSync() {
+  if (pendingTextInputSync) {
+    clearTimeout(pendingTextInputSync);
+  }
+
+  pendingTextInputSync = setTimeout(() => {
+    pendingTextInputSync = null;
+    persistSession();
+    emitChange();
+  }, TEXT_INPUT_SYNC_DELAY_MS);
 }
 
 function savePreThemeAnswers() {
@@ -1674,9 +1688,10 @@ function restoreSession() {
 }
 
 function stripVocabularyRefs(journey) {
-  const clone = structuredCloneSafe(journey);
-  delete clone.vocabularyById;
-  return clone;
+  // Do not deep-clone the full vocabulary lookup on every save. It can contain
+  // thousands of entries and is restored from the data files at startup.
+  const { vocabularyById, ...serializableJourney } = journey || {};
+  return structuredCloneSafe(serializableJourney);
 }
 
 function emitChange() {
