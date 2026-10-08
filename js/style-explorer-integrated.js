@@ -1357,7 +1357,7 @@ function bindScreenEvents() {
       persistFeedbackFields();
       if (!state.handoff) state.handoff = buildHandoff();
       notifyParentStyleUpdate();
-      window.BMBMPlanner?.goToStep(22);
+      window.BMBMPlanner?.goToStep(23);
     });
   }
 

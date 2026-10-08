@@ -1,0 +1,30 @@
+#jewelry-explorer-root h1 { font-size: clamp(2rem, 7vw, 2.6rem); line-height: 1.08; }
+.jewelry-photo { display: block; width: 100%; height: clamp(220px, 36vh, 340px); object-fit: contain; background: white; border-radius: 16px; }
+.jewelry-swipe-card { touch-action: pan-y; user-select: none; transition: transform .15s ease; border: 1px solid var(--soft); border-radius: var(--radius-lg); background: rgba(255,255,255,.65); box-shadow: 0 10px 30px rgba(83,58,46,.06); overflow: hidden; text-align: center; }
+.jewelry-image-stage { background: white; padding: 18px; }
+.jewelry-swipe-card h2 { margin: 18px 18px 6px; font-size: 1.2rem; line-height: 1.3; }
+.jewelry-card-caption { margin: 0 16px 20px; color: var(--muted); font-size: .8rem; }
+.jewelry-swipe-hint { color: var(--muted); font-size: .75rem; text-align: center; margin: 12px 0 22px; }
+.jewelry-swipe-card img { pointer-events: none; }
+.jewelry-actions { display: flex; gap: 12px; margin: 18px 0 0; }
+.jewelry-actions button { flex: 1; min-height: 52px; margin: 0; width: auto; }
+.jewelry-gallery { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.jewelry-gallery article { padding: 16px; border: 1px solid var(--soft); border-radius: var(--radius-md); background: rgba(255,255,255,.55); min-width: 0; }
+.jewelry-gallery .jewelry-photo { height: 210px; }
+.jewelry-gallery h3 { margin: 14px 0; font-size: 1rem; line-height: 1.35; overflow-wrap: anywhere; }
+.jewelry-gallery label { display: block; color: var(--muted); font-size: .85rem; }
+.jewelry-gallery textarea { display: block; width: 100%; min-height: 90px; margin-top: 8px; }
+.jewelry-gallery button { margin-top: 10px; }
+.jewelry-status { color: var(--muted); font-size: .8rem; margin: 0 0 18px; }
+.jewelry-footer { border-top: 1px solid var(--soft); padding-top: 18px; margin-top: 22px; }
+.jewelry-footer .jewelry-end { width: 100%; margin: 0; }
+.jewelry-footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 22px; margin-top: 12px; }
+.jewelry-text-button { background: none; border: 0; color: var(--accent-dark); padding: 10px 2px; min-height: 44px; font-size: .82rem; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.jewelry-checkpoint { width: min(420px, calc(100vw - 36px)); max-height: calc(100dvh - 48px); overflow-y: auto; padding: 28px; background: var(--card); color: var(--text); border: 1px solid var(--soft); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+.jewelry-checkpoint::backdrop { background: rgba(47,39,35,.42); backdrop-filter: blur(4px); }
+.jewelry-checkpoint h2 { margin: 0; font-size: 1.7rem; line-height: 1.12; letter-spacing: -.04em; }
+.jewelry-checkpoint-actions { display: grid; gap: 10px; }
+.jewelry-checkpoint-actions button { margin: 0; width: 100%; min-height: 48px; }
+#jewelry-explorer-root :focus-visible, .jewelry-checkpoint :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) { .jewelry-swipe-card { transition: none; } }
+@media (max-width: 360px) { .jewelry-gallery { grid-template-columns: 1fr; } }

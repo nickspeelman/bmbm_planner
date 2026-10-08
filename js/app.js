@@ -560,6 +560,15 @@ function setStyleExplorerProgress(progressStep) {
 }
 
 window.BMBMPlanner = {
+  receiveJewelryExplorerUpdate(handoff) {
+    state.jewelryExplorer = handoff;
+    if (state.step === 22) renderReview();
+  },
+  getConsultationHandoff() {
+    return { contact: state.contact, startingPoint: state.startingPoint, lifestyle: state.lifestyle,
+      earChoice: state.earChoice, lobe: state.lobe, styleExplorer: state.styleExplorer,
+      jewelryExplorer: state.jewelryExplorer || null };
+  },
   goToStep(step) {
     state.step = Number(step);
     renderAll();
@@ -752,6 +761,9 @@ function renderProgress() {
   } else if (activeProgress >= 10 && activeProgress <= 21) {
     phaseLabel = 'Style';
     phasePercent = 78;
+  } else if (activeProgress === 23) {
+    phaseLabel = 'Jewelry';
+    phasePercent = 90;
   } else if (activeProgress >= 22) {
     phaseLabel = 'Review';
     phasePercent = 100;
@@ -1538,7 +1550,15 @@ function renderReview() {
     ${reviewEarSection('Existing piercings', 'existing')}
     ${reviewEarSection('Future interests', 'future')}
     ${renderStyleExplorerReview()}
+    ${renderJewelryExplorerReview()}
   `;
+}
+
+function renderJewelryExplorerReview() {
+  const selections = state.jewelryExplorer?.selections || [];
+  return reviewSection('Jewelry taste portfolio', selections.length
+    ? `<div class="jewelry-gallery">${selections.map(item => `<article><img class="jewelry-photo" src="${escapeHTML(item.imageUrl)}" alt="${escapeHTML(item.name)}"><h3>${escapeHTML(item.name)}</h3><p>${escapeHTML(item.comment || '')}</p></article>`).join('')}</div>`
+    : '<p class="review-empty">No jewelry selected.</p>');
 }
 
 const hopeLabels = {
